@@ -324,9 +324,9 @@ export const Toolbar = ({ selectedWireColor, onWireColorChange, autoSnapEnabled,
           .sort((a, b) => a - b);
 
         sortedPorts.forEach((portNumber, index) => {
-          // Vertical spacing for differential ports (stacked in middle column)
-          const diffPortX = centerX + 500; // 500px to the right of controller
-          const diffPortY = centerY - 200 + (index * 250); // Vertical stack with 250px spacing
+          // Position differential ports beneath controller in vertical stack
+          const diffPortX = centerX; // Aligned with controller
+          const diffPortY = centerY + 300 + (index * 150); // Below controller with 150px spacing
 
           const diffPortId = `diff-port-${Date.now()}-${portNumber}`;
 
@@ -348,13 +348,13 @@ export const Toolbar = ({ selectedWireColor, onWireColorChange, autoSnapEnabled,
           addDifferentialPort(differentialPort);
           differentialPorts.set(portNumber, differentialPort);
 
-          // Wire from controller to differential port
+          // Wire from controller to differential port (no label for cleaner diagram)
           addWire({
             id: `wire-ctrl-diffport-${Date.now()}-${portNumber}`,
             color: 'blue',
             from: { nodeId: controllerId },
             to: { nodeId: diffPortId },
-            label: `Diff ${portNumber}`,
+            label: '',
           });
         });
 
@@ -364,8 +364,8 @@ export const Toolbar = ({ selectedWireColor, onWireColorChange, autoSnapEnabled,
         const receiversPerRow = 6; // 6 receivers per row
         const receiverSpacingX = 300; // Horizontal spacing between receivers
         const receiverSpacingY = 250; // Vertical spacing between receiver rows
-        const receiversStartX = centerX + 1100; // Start receivers to the right of differential ports
-        const receiversStartY = centerY - 200; // Align with top differential port
+        const receiversStartX = centerX + 600; // Start receivers to the right of controller
+        const receiversStartY = centerY + 300; // Start at same level as first differential
 
         sortedPorts.forEach((differentialPortNumber) => {
           const receiversInChain = receiversByDiffPort[differentialPortNumber];
@@ -406,23 +406,23 @@ export const Toolbar = ({ selectedWireColor, onWireColorChange, autoSnapEnabled,
             differentialPort.connectedReceivers.push(receiverId);
 
             if (chainIdx === 0) {
-              // First receiver: connect from differential port
+              // First receiver: connect from differential port (no label)
               addWire({
                 id: `wire-diffport-rec-${timestamp}-${differentialPortNumber}-${chainIdx}`,
                 color: 'blue',
                 from: { nodeId: differentialPort.id },
                 to: { nodeId: receiverId, portId: 'receiver-input' },
-                label: 'CAT5',
+                label: '',
               });
             } else {
-              // Subsequent receivers: daisy chain from previous receiver
+              // Subsequent receivers: daisy chain from previous receiver (no label)
               const prevReceiverId = chainReceiverIds[chainIdx - 1];
               addWire({
                 id: `wire-chain-${timestamp}-${differentialPortNumber}-${chainIdx}`,
                 color: 'blue',
                 from: { nodeId: prevReceiverId, portId: 'receiver-output-1' },
                 to: { nodeId: receiverId, portId: 'receiver-input' },
-                label: `Daisy ${receiverNumber}`,
+                label: '',
               });
             }
           });

@@ -51,25 +51,32 @@ export const DifferentialPortNode = memo(({ data }: NodeProps<DifferentialPortNo
     }
   };
 
+  // Calculate total utilization across all 4 ports
+  const totalCurrentPixels = aggregatedBudgets.reduce((sum, b) => sum + b.currentPixels, 0);
+  const totalMaxPixels = aggregatedBudgets.reduce((sum, b) => sum + b.maxPixels, 0);
+  const totalUtilization = ((totalCurrentPixels / totalMaxPixels) * 100).toFixed(1);
+  const isOverCapacity = aggregatedBudgets.some(b => b.isOverCapacity);
+
   return (
     <div
       style={{
-        padding: '12px',
+        padding: '8px',
         border: '2px solid #805AD5',
         borderRadius: '8px',
         background: '#E9D8FD',
-        width: '280px',
-        minHeight: '180px',
+        width: '200px',
+        height: '100px',
         position: 'relative',
+        overflow: 'visible',
       }}
     >
-      {/* Input connection from controller (left side) */}
+      {/* Input connection from controller (top center) */}
       <div
         style={{
           position: 'absolute',
-          left: '-12px',
-          top: '50%',
-          transform: 'translateY(-50%)',
+          left: '50%',
+          top: '-12px',
+          transform: 'translateX(-50%)',
           width: '20px',
           height: '20px',
           border: '2px solid #805AD5',
@@ -77,16 +84,16 @@ export const DifferentialPortNode = memo(({ data }: NodeProps<DifferentialPortNo
           borderRadius: '2px',
         }}
       >
-        <Handle type="target" position={Position.Left} id="diff-port-input" style={{ opacity: 0 }} />
+        <Handle type="target" position={Position.Top} id="diff-port-input" style={{ opacity: 0 }} />
       </div>
 
-      {/* Output connections to receivers (right side) */}
+      {/* Output connections to receivers (bottom center) */}
       <div
         style={{
           position: 'absolute',
-          right: '-12px',
-          top: '50%',
-          transform: 'translateY(-50%)',
+          left: '50%',
+          bottom: '-12px',
+          transform: 'translateX(-50%)',
           width: '20px',
           height: '20px',
           border: '2px solid #805AD5',
@@ -94,7 +101,7 @@ export const DifferentialPortNode = memo(({ data }: NodeProps<DifferentialPortNo
           borderRadius: '2px',
         }}
       >
-        <Handle type="source" position={Position.Right} id="diff-port-output" style={{ opacity: 0 }} />
+        <Handle type="source" position={Position.Bottom} id="diff-port-output" style={{ opacity: 0 }} />
       </div>
 
       {/* Differential port number in top-left */}
@@ -111,7 +118,20 @@ export const DifferentialPortNode = memo(({ data }: NodeProps<DifferentialPortNo
         Diff {differentialPort.portNumber}
       </div>
 
-      {/* Differential port name - editable */}
+      {/* Receiver count in top-right */}
+      <div
+        style={{
+          position: 'absolute',
+          top: '8px',
+          right: '8px',
+          fontSize: '12px',
+          color: '#553C9A',
+        }}
+      >
+        {differentialPort.connectedReceivers.length} Rx
+      </div>
+
+      {/* Differential port name - centered, bold */}
       {isEditing ? (
         <input
           type="text"
@@ -121,63 +141,58 @@ export const DifferentialPortNode = memo(({ data }: NodeProps<DifferentialPortNo
           onKeyDown={handleKeyDown}
           autoFocus
           style={{
-            width: '100%',
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: '80%',
             fontWeight: 'bold',
             color: '#553C9A',
             border: '2px solid #805AD5',
             borderRadius: '4px',
             padding: '4px 8px',
-            fontSize: '16px',
+            fontSize: '18px',
             textAlign: 'center',
-            marginTop: '24px',
-            marginBottom: '12px',
           }}
         />
       ) : (
         <div
           style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
             fontWeight: 'bold',
             color: '#553C9A',
             cursor: 'pointer',
-            fontSize: '16px',
+            fontSize: '18px',
             textAlign: 'center',
-            marginTop: '24px',
-            marginBottom: '12px',
+            width: '80%',
           }}
           onDoubleClick={handleDoubleClick}
           title="Double-click to rename"
         >
-          {differentialPort.name}
+          Port {differentialPort.portNumber}
         </div>
       )}
 
-      {/* Shared budget display for 4 ports */}
-      <div style={{ fontSize: '11px', color: '#553C9A' }}>
-        <div style={{ fontWeight: 'bold', marginBottom: '4px', textAlign: 'center' }}>
-          Shared Budgets ({differentialPort.connectedReceivers.length} receiver{differentialPort.connectedReceivers.length !== 1 ? 's' : ''})
-        </div>
-        {aggregatedBudgets.map((budget, idx) => (
-          <div
-            key={idx}
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              marginBottom: '3px',
-              padding: '2px 4px',
-              background: budget.isOverCapacity ? '#FED7D7' : 'white',
-              borderRadius: '3px',
-              border: budget.isOverCapacity ? '1px solid #FC8181' : '1px solid #D6BCFA',
-            }}
-          >
-            <span style={{ fontWeight: 'bold' }}>{budget.portName}:</span>
-            <span style={{
-              color: budget.isOverCapacity ? '#C53030' : '#553C9A',
-              fontWeight: budget.isOverCapacity ? 'bold' : 'normal'
-            }}>
-              {budget.currentPixels}/{budget.maxPixels}px ({budget.utilization}%)
-            </span>
-          </div>
-        ))}
+      {/* Total utilization at bottom */}
+      <div
+        style={{
+          position: 'absolute',
+          bottom: '8px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          fontSize: '10px',
+          color: isOverCapacity ? '#C53030' : '#553C9A',
+          fontWeight: isOverCapacity ? 'bold' : 'normal',
+          background: isOverCapacity ? '#FED7D7' : 'white',
+          padding: '2px 6px',
+          borderRadius: '3px',
+          border: `1px solid ${isOverCapacity ? '#FC8181' : '#D6BCFA'}`,
+        }}
+      >
+        {totalCurrentPixels}/{totalMaxPixels}px ({totalUtilization}%)
       </div>
     </div>
   );

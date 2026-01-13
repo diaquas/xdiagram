@@ -127,11 +127,10 @@ export const Toolbar = ({ selectedWireColor, onWireColorChange, autoSnapEnabled,
         body: JSON.stringify(data),
       });
       if (response.ok) {
-        alert('Diagram saved successfully!');
+        console.log('Diagram saved successfully!');
       }
     } catch (error) {
       console.error('Error saving diagram:', error);
-      alert('Failed to save diagram');
     }
   };
 
@@ -140,16 +139,15 @@ export const Toolbar = ({ selectedWireColor, onWireColorChange, autoSnapEnabled,
       const response = await fetch('http://localhost:3001/api/diagram');
       const data = await response.json();
       loadDiagram(data);
-      alert('Diagram loaded successfully!');
+      console.log('Diagram loaded successfully!');
     } catch (error) {
       console.error('Error loading diagram:', error);
-      alert('Failed to load diagram');
     }
   };
 
   const handleConnectXLights = async () => {
     if (!xLightsNetworksPath) {
-      alert('Please enter the path to your xlights_networks.xml file');
+      console.error('Please enter the path to your xlights_networks.xml file');
       return;
     }
 
@@ -162,7 +160,7 @@ export const Toolbar = ({ selectedWireColor, onWireColorChange, autoSnapEnabled,
       });
 
       if (!parseResponse.ok) {
-        alert('Failed to parse xLights networks file');
+        console.error('Failed to parse xLights networks file');
         return;
       }
 
@@ -170,7 +168,7 @@ export const Toolbar = ({ selectedWireColor, onWireColorChange, autoSnapEnabled,
       console.log('Parsed controllers:', controllers);
 
       if (controllers.length === 0) {
-        alert('No controllers found in xLights networks file');
+        console.error('No controllers found in xLights networks file');
         return;
       }
 
@@ -211,11 +209,10 @@ export const Toolbar = ({ selectedWireColor, onWireColorChange, autoSnapEnabled,
 
       if (watchResponse.ok) {
         const portInfoMsg = portInfo ? ` with port mapping from ${Object.keys(portInfo.controllers).length} controller(s)` : '';
-        alert(`Connected to xLights! Found ${controllers.length} controller(s)${portInfoMsg}.`);
+        console.log(`Connected to xLights! Found ${controllers.length} controller(s)${portInfoMsg}.`);
       }
     } catch (error) {
       console.error('Error connecting to xLights:', error);
-      alert('Failed to connect to xLights');
     }
   };
 
@@ -231,17 +228,17 @@ export const Toolbar = ({ selectedWireColor, onWireColorChange, autoSnapEnabled,
 
   const handleImportControllers = () => {
     if (availableControllers.length === 0) {
-      alert('No controllers available to import');
+      console.error('No controllers available to import');
       return;
     }
 
     if (selectedControllers.size === 0) {
-      alert('Please select at least one controller to import');
+      console.error('Please select at least one controller to import');
       return;
     }
 
     if (!controllerPortInfo || !controllerPortInfo.models || controllerPortInfo.models.length === 0) {
-      alert('No model data available from rgbeffects file. Please ensure both xlights_networks.xml and xlights_rgbeffects.xml are loaded.');
+      console.error('No model data available from rgbeffects file. Please ensure both xlights_networks.xml and xlights_rgbeffects.xml are loaded.');
       return;
     }
 
@@ -425,10 +422,10 @@ export const Toolbar = ({ selectedWireColor, onWireColorChange, autoSnapEnabled,
           });
         });
 
-        alert(`Imported ${xlController.name} with ${receiversData.length} receiver(s) and ${controllerModels.length} model(s)!`);
+        console.log(`Imported ${xlController.name} with ${receiversData.length} receiver(s) and ${controllerModels.length} model(s)!`);
       } else {
         // Non-HinksPix controller: simple layout
-        alert(`Imported ${xlController.name}`);
+        console.log(`Imported ${xlController.name}`);
       }
     });
   };

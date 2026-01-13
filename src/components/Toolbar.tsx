@@ -433,7 +433,7 @@ export const Toolbar = ({ selectedWireColor, onWireColorChange, autoSnapEnabled,
     });
   };
 
-  // Helper function to group models into receivers
+  // Helper function to group models into receivers based on xLights universe assignments
   const createReceiversFromModels = (models: any[]) => {
     if (models.length === 0) return [];
 
@@ -445,117 +445,81 @@ export const Toolbar = ({ selectedWireColor, onWireColorChange, autoSnapEnabled,
       return [];
     }
 
-    // Sort all models by start channel
-    const sortedModels = [...validModels].sort((a, b) => a.startChannel - b.startChannel);
+    // Group models by universe - xLights already determined the port assignments
+    const modelsByUniverse: { [universe: number]: any[] } = {};
+    validModels.forEach(model => {
+      const universe = Math.floor((model.startChannel - 1) / 510) + 1;
+      if (!modelsByUniverse[universe]) {
+        modelsByUniverse[universe] = [];
+      }
+      modelsByUniverse[universe].push(model);
+    });
 
-    console.log(`\n=== RECEIVER GROUPING ===`);
-    console.log(`Total models: ${sortedModels.length}`);
+    console.log(`\n=== RECEIVER GROUPING (xLights-based) ===`);
+    console.log(`Total universes with models: ${Object.keys(modelsByUniverse).length}`);
 
-    // Initialize receivers array and constants
     const receivers: any[] = [];
-    const portsPerReceiver = 4;
     const maxPixelsPerPort = 1024;
-    const maxPixelsPerReceiver = 4096; // Total capacity across all 4 ports
 
-    // Track current receiver and port
-    let currentReceiver: any = null;
-    let currentPortIndex = 0;
-    let currentReceiverTotalPixels = 0;
+    // Process each universe separately
+    // Each universe maps to a specific receiver port in xLights
+    Object.keys(modelsByUniverse).sort((a, b) => parseInt(a) - parseInt(b)).forEach(universeStr => {
+      const universe = parseInt(universeStr);
+      const universeModels = modelsByUniverse[universe].sort((a, b) => a.startChannel - b.startChannel);
 
-    const startNewReceiver = () => {
-      const receiverIndex = receivers.length + 1;
-      currentPortIndex = 0;
-      currentReceiverTotalPixels = 0;
+      const totalPixels = universeModels.reduce((sum, m) => sum + (m.pixelCount || 0), 0);
+      console.log(`  Universe ${universe}: ${universeModels.length} models, ${totalPixels} pixels`);
 
-      // Calculate the universe based on the first model that will be added
-      // We'll update this when we add the first model
-      currentReceiver = {
-        name: `Receiver ${receiverIndex}`,
-        dipSwitch: String(receiverIndex - 1).padStart(4, '0'),
-        universe: null, // Will be set to first model's universe
-        ports: [
-          { id: `p1-${receiverIndex}`, name: 'Port 1', maxPixels: maxPixelsPerPort, currentPixels: 0, models: [] },
-          { id: `p2-${receiverIndex}`, name: 'Port 2', maxPixels: maxPixelsPerPort, currentPixels: 0, models: [] },
-          { id: `p3-${receiverIndex}`, name: 'Port 3', maxPixels: maxPixelsPerPort, currentPixels: 0, models: [] },
-          { id: `p4-${receiverIndex}`, name: 'Port 4', maxPixels: maxPixelsPerPort, currentPixels: 0, models: [] },
-        ],
-      };
-      receivers.push(currentReceiver);
-      return currentReceiver;
-    };
+      // Calculate how many receivers needed for this universe (based on 1024px per port)
+      // Each receiver has 4 ports, but we'll use port 1 for universe models
+      const receiversNeeded = Math.ceil(totalPixels / maxPixelsPerPort);
 
-    // Start first receiver
-    startNewReceiver();
+      for (let i = 0; i < receiversNeeded; i++) {
+        const receiverIndex = receivers.length + 1;
+        const receiver: any = {
+          name: `Receiver ${receiverIndex}`,
+          dipSwitch: String(receiverIndex - 1).padStart(4, '0'),
+          universe: universe,
+          ports: [
+            { id: `p1-${receiverIndex}`, name: 'Port 1', maxPixels: maxPixelsPerPort, currentPixels: 0, models: [] },
+            { id: `p2-${receiverIndex}`, name: 'Port 2', maxPixels: maxPixelsPerPort, currentPixels: 0, models: [] },
+            { id: `p3-${receiverIndex}`, name: 'Port 3', maxPixels: maxPixelsPerPort, currentPixels: 0, models: [] },
+            { id: `p4-${receiverIndex}`, name: 'Port 4', maxPixels: maxPixelsPerPort, currentPixels: 0, models: [] },
+          ],
+        };
 
-    // Distribute models across receivers based on pixel budget
-    for (const model of sortedModels) {
-      const pixelCount = model.pixelCount || 0;
-      const modelUniverse = Math.floor((model.startChannel - 1) / 510) + 1;
+        // Fill port 1 with models from this universe
+        let portPixels = 0;
+        const port = receiver.ports[0];
 
-      // Set receiver universe to first model's universe
-      if (currentReceiver.universe === null) {
-        currentReceiver.universe = modelUniverse;
-      }
+        while (universeModels.length > 0 && portPixels < maxPixelsPerPort) {
+          const model = universeModels[0];
+          const modelPixels = model.pixelCount || 0;
 
-      // Check if adding this model would exceed receiver capacity
-      if (currentReceiverTotalPixels + pixelCount > maxPixelsPerReceiver) {
-        // Start new receiver
-        console.log(`  Receiver ${receivers.length} full (${currentReceiverTotalPixels}px), starting new receiver`);
-        startNewReceiver();
-        currentReceiver.universe = modelUniverse;
-      }
-
-      // Try to add model to current port
-      let placed = false;
-      for (let attempts = 0; attempts < portsPerReceiver && !placed; attempts++) {
-        const port = currentReceiver.ports[currentPortIndex];
-        const remainingSpace = port.maxPixels - port.currentPixels;
-
-        if (pixelCount <= remainingSpace) {
-          // Model fits on current port
-          port.models.push({
-            name: model.name,
-            pixels: pixelCount,
-          });
-          port.currentPixels += pixelCount;
-          currentReceiverTotalPixels += pixelCount;
-          placed = true;
-        } else {
-          // Move to next port
-          currentPortIndex++;
-          if (currentPortIndex >= portsPerReceiver) {
-            // All ports full, need new receiver
-            console.log(`  Receiver ${receivers.length} ports full (${currentReceiverTotalPixels}px), starting new receiver`);
-            startNewReceiver();
-            currentReceiver.universe = modelUniverse;
+          if (portPixels + modelPixels <= maxPixelsPerPort) {
+            // Model fits on this receiver's port 1
+            port.models.push({
+              name: model.name,
+              pixels: modelPixels,
+            });
+            port.currentPixels += modelPixels;
+            portPixels += modelPixels;
+            universeModels.shift(); // Remove from array
+          } else {
+            // Model doesn't fit, move to next receiver
+            break;
           }
         }
-      }
 
-      if (!placed) {
-        // Model is too large for any single port, put it on first port of new receiver anyway
-        startNewReceiver();
-        currentReceiver.universe = modelUniverse;
-        const port = currentReceiver.ports[0];
-        port.models.push({
-          name: model.name,
-          pixels: pixelCount,
-        });
-        port.currentPixels += pixelCount;
-        currentReceiverTotalPixels += pixelCount;
-        currentPortIndex = 0;
+        console.log(`    Receiver ${receiverIndex}: Port 1 has ${port.models.length} models (${port.currentPixels}px)`);
+        receivers.push(receiver);
       }
-    }
-
-    console.log(`Total receivers created: ${receivers.length}`);
-    receivers.forEach((r, idx) => {
-      const totalPixels = r.ports.reduce((sum: number, p: any) => sum + p.currentPixels, 0);
-      console.log(`  Receiver ${idx + 1}: ${totalPixels}px across ${r.ports.filter((p: any) => p.models.length > 0).length} ports (Universe ${r.universe})`);
     });
+
+    console.log(`\nTotal receivers created: ${receivers.length}`);
     console.log('======================\n');
 
-    // Filter out receivers with no models
-    return receivers.filter(r => r.ports.some((p: any) => p.models.length > 0));
+    return receivers;
   };
 
   return (

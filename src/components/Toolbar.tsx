@@ -348,7 +348,7 @@ export const Toolbar = ({ selectedWireColor, onWireColorChange, autoSnapEnabled,
         // Create 4 Differential boards (UI layer) - each board contains 4 ports
         // Board 1: ports 1-4, Board 2: ports 5-8, Board 3: ports 9-12, Board 4: ports 13-16
         const boardCount = 4;
-        const boardSpacing = 400;
+        const boardSpacing = 600; // Much wider spacing between boards
         const boardStartX = centerX - ((boardCount - 1) * boardSpacing) / 2;
         const boardY = centerY + 300;
 
@@ -398,8 +398,8 @@ export const Toolbar = ({ selectedWireColor, onWireColorChange, autoSnapEnabled,
 
         // Create receivers and wire them to differential boards
         // Position receivers below their respective board
-        const receiverVerticalSpacing = 180; // Vertical spacing between stacked receivers (increased for cleaner view)
-        const receiversStartY = boardY + 300; // Start below differential boards (more space)
+        const receiverVerticalSpacing = 250; // Much more vertical spacing to avoid overlaps
+        const receiversStartY = boardY + 400; // Start much further below differential boards
 
         // Track receivers per board for positioning
         const receiversPerBoard: Map<number, number> = new Map();

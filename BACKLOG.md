@@ -273,6 +273,11 @@ Auto-import controllers with proper names, types, and ports - **DONE** (2026-01-
 1. Fixed xLights XML parser to handle lowercase `<network>` elements
 2. Implemented wire color selection (red/black/blue)
 3. Implemented automatic controller import from xLights with proper names, types, and port configurations
+4. Fixed Issue #7: Improved controller visualization with compact/hierarchical display
+   - Controllers with >8 ports show compact summary (e.g., "171 Ports • 0/29070 px")
+   - Expandable view to see all ports
+   - Port numbers now display as "Port 1", "Port 2" instead of "Universe 200", "Universe 201"
+   - Much cleaner UI for controllers with many ports
 
 🎯 **Next recommended tasks:**
 - Issue #2: Property editing for nodes

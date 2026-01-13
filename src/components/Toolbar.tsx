@@ -171,13 +171,16 @@ export const Toolbar = ({ selectedWireColor, onWireColorChange }: ToolbarProps) 
 
     availableControllers.forEach((xlController, index) => {
       // Create ports from xLights outputs
+      // Use actual port numbers (1, 2, 3...) instead of universe numbers
       const ports = xlController.outputs.map((output: any, portIndex: number) => {
         const maxPixels = Math.floor(output.channels / 3); // RGB: 3 channels per pixel
+        const portNum = portIndex + 1;
         return {
-          id: `p${portIndex + 1}`,
-          name: output.description || `Port ${output.number}`,
+          id: `p${portNum}`,
+          name: `Port ${portNum}`,
           maxPixels: maxPixels,
           currentPixels: 0,
+          universe: output.number, // Store universe number as metadata
         };
       });
 

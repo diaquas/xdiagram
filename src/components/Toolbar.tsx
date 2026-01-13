@@ -1,17 +1,20 @@
 import { useState } from 'react';
 import { useDiagramStore } from '../store/diagramStore';
-import { Controller, Receiver, Differential, EthernetSwitch, PowerSupply, Label, WireColor } from '../types/diagram';
+import { Controller, Receiver, Differential, DifferentialPort, EthernetSwitch, PowerSupply, Label, WireColor } from '../types/diagram';
 
 interface ToolbarProps {
   selectedWireColor: WireColor;
   onWireColorChange: (color: WireColor) => void;
+  autoSnapEnabled: boolean;
+  onAutoSnapChange: (enabled: boolean) => void;
 }
 
-export const Toolbar = ({ selectedWireColor, onWireColorChange }: ToolbarProps) => {
+export const Toolbar = ({ selectedWireColor, onWireColorChange, autoSnapEnabled, onAutoSnapChange }: ToolbarProps) => {
   const {
     addController,
     addReceiver,
     addDifferential,
+    addDifferentialPort,
     addEthernetSwitch,
     addPowerSupply,
     addLabel,
@@ -125,11 +128,10 @@ export const Toolbar = ({ selectedWireColor, onWireColorChange }: ToolbarProps) 
         body: JSON.stringify(data),
       });
       if (response.ok) {
-        alert('Diagram saved successfully!');
+        console.log('Diagram saved successfully!');
       }
     } catch (error) {
       console.error('Error saving diagram:', error);
-      alert('Failed to save diagram');
     }
   };
 
@@ -138,16 +140,15 @@ export const Toolbar = ({ selectedWireColor, onWireColorChange }: ToolbarProps) 
       const response = await fetch('http://localhost:3001/api/diagram');
       const data = await response.json();
       loadDiagram(data);
-      alert('Diagram loaded successfully!');
+      console.log('Diagram loaded successfully!');
     } catch (error) {
       console.error('Error loading diagram:', error);
-      alert('Failed to load diagram');
     }
   };
 
   const handleConnectXLights = async () => {
     if (!xLightsNetworksPath) {
-      alert('Please enter the path to your xlights_networks.xml file');
+      console.error('Please enter the path to your xlights_networks.xml file');
       return;
     }
 
@@ -160,7 +161,7 @@ export const Toolbar = ({ selectedWireColor, onWireColorChange }: ToolbarProps) 
       });
 
       if (!parseResponse.ok) {
-        alert('Failed to parse xLights networks file');
+        console.error('Failed to parse xLights networks file');
         return;
       }
 
@@ -168,7 +169,7 @@ export const Toolbar = ({ selectedWireColor, onWireColorChange }: ToolbarProps) 
       console.log('Parsed controllers:', controllers);
 
       if (controllers.length === 0) {
-        alert('No controllers found in xLights networks file');
+        console.error('No controllers found in xLights networks file');
         return;
       }
 
@@ -209,11 +210,10 @@ export const Toolbar = ({ selectedWireColor, onWireColorChange }: ToolbarProps) 
 
       if (watchResponse.ok) {
         const portInfoMsg = portInfo ? ` with port mapping from ${Object.keys(portInfo.controllers).length} controller(s)` : '';
-        alert(`Connected to xLights! Found ${controllers.length} controller(s)${portInfoMsg}.`);
+        console.log(`Connected to xLights! Found ${controllers.length} controller(s)${portInfoMsg}.`);
       }
     } catch (error) {
       console.error('Error connecting to xLights:', error);
-      alert('Failed to connect to xLights');
     }
   };
 
@@ -229,17 +229,17 @@ export const Toolbar = ({ selectedWireColor, onWireColorChange }: ToolbarProps) 
 
   const handleImportControllers = () => {
     if (availableControllers.length === 0) {
-      alert('No controllers available to import');
+      console.error('No controllers available to import');
       return;
     }
 
     if (selectedControllers.size === 0) {
-      alert('Please select at least one controller to import');
+      console.error('Please select at least one controller to import');
       return;
     }
 
     if (!controllerPortInfo || !controllerPortInfo.models || controllerPortInfo.models.length === 0) {
-      alert('No model data available from rgbeffects file. Please ensure both xlights_networks.xml and xlights_rgbeffects.xml are loaded.');
+      console.error('No model data available from rgbeffects file. Please ensure both xlights_networks.xml and xlights_rgbeffects.xml are loaded.');
       return;
     }
 
@@ -262,6 +262,7 @@ export const Toolbar = ({ selectedWireColor, onWireColorChange }: ToolbarProps) 
       );
 
       console.log(`Importing ${xlController.name}: ${controllerModels.length} models found`);
+      console.log('Sample model data:', controllerModels.slice(0, 3));
 
       // Create controller node (HinksPix has no physical pixel ports)
       const ports = isHinksPix ? [] : xlController.outputs.map((output: any) => {
@@ -286,84 +287,92 @@ export const Toolbar = ({ selectedWireColor, onWireColorChange }: ToolbarProps) 
       addController(controller);
 
       if (isHinksPix && controllerModels.length > 0) {
-        // HinksPix setup: Create differentials and receivers with models
-        const differentialCount = 4; // 4 differential boards
-
-        // Group models by universe to create logical receiver groups
-        // Each receiver handles 4 ports (A, B, C, D), each port can have multiple models
+        // HinksPix setup: Create differential ports and receivers with models
         const receiversData = createReceiversFromModels(controllerModels);
 
-        // Create differential boards in a circle around the controller
-        const differentials: any[] = [];
-        for (let i = 0; i < differentialCount; i++) {
-          const angle = (i / differentialCount) * 2 * Math.PI;
-          const diffX = centerX + differentialRadius * Math.cos(angle);
-          const diffY = centerY + differentialRadius * Math.sin(angle);
+        // Group receivers by differential port (based on universe mapping)
+        console.log(`\n=== DIFFERENTIAL PORT GROUPING ===`);
+        console.log(`Total receivers created: ${receiversData.length}`);
 
-          const diffId = `differential-${Date.now()}-${i}`;
-          const differential: Differential = {
-            id: diffId,
-            name: `Differential ${i + 1}`,
-            controllerConnection: controllerId,
-            ports: [
-              { id: `e1-${i}`, name: 'E1', maxPixels: 0, currentPixels: 0 },
-              { id: `e2-${i}`, name: 'E2', maxPixels: 0, currentPixels: 0 },
-              { id: `e3-${i}`, name: 'E3', maxPixels: 0, currentPixels: 0 },
-              { id: `e4-${i}`, name: 'E4', maxPixels: 0, currentPixels: 0 },
-            ],
-            position: { x: diffX, y: diffY },
-          };
-
-          addDifferential(differential);
-          differentials.push(differential);
-
-          // Create blue wire from controller to differential
-          addWire({
-            id: `wire-ctrl-diff-${Date.now()}-${i}`,
-            color: 'blue',
-            from: { nodeId: controllerId },
-            to: { nodeId: diffId },
-            label: 'Ribbon',
-          });
-        }
-
-        // Group receivers by differential port for daisy-chaining
-        const receiversByPort: { [key: number]: any[] } = {};
+        const receiversByDiffPort: { [key: number]: any[] } = {};
         receiversData.forEach((receiverData: any, idx: number) => {
-          // Calculate differential port number (1-16, cycling through 16 ports)
-          const differentialPortNumber = (idx % 16) + 1;
+          // Map universe to differential port (1-16)
+          const universe = receiverData.universe || 1;
+          const differentialPortNumber = ((universe - 1) % 16) + 1;
 
-          if (!receiversByPort[differentialPortNumber]) {
-            receiversByPort[differentialPortNumber] = [];
+          console.log(`  Receiver ${idx + 1} (${receiverData.name}) [Universe ${universe}] → Diff Port ${differentialPortNumber}`);
+
+          if (!receiversByDiffPort[differentialPortNumber]) {
+            receiversByDiffPort[differentialPortNumber] = [];
           }
-          receiversByPort[differentialPortNumber].push(receiverData);
+          receiversByDiffPort[differentialPortNumber].push(receiverData);
         });
 
-        // Process each differential port's daisy chain
-        Object.keys(receiversByPort).forEach((portNumStr) => {
+        console.log('\nReceivers per differential port:');
+        Object.keys(receiversByDiffPort).sort((a, b) => parseInt(a) - parseInt(b)).forEach(port => {
+          console.log(`  Diff Port ${port}: ${receiversByDiffPort[parseInt(port)].length} receiver(s)`);
+        });
+        console.log('======================\n');
+
+        // Create DifferentialPort nodes for each unique differential port
+        const differentialPorts: Map<number, DifferentialPort> = new Map();
+        const maxPixelsPerPort = 1024;
+
+        Object.keys(receiversByDiffPort).forEach((portNumStr) => {
+          const portNumber = parseInt(portNumStr, 10);
+
+          // Calculate position for this differential port (spread in circle around controller)
+          const angle = ((portNumber - 1) / 16) * 2 * Math.PI;
+          const diffPortX = centerX + differentialRadius * Math.cos(angle);
+          const diffPortY = centerY + differentialRadius * Math.sin(angle);
+
+          const diffPortId = `diff-port-${Date.now()}-${portNumber}`;
+
+          const differentialPort: DifferentialPort = {
+            id: diffPortId,
+            name: `Diff Port ${portNumber}`,
+            portNumber: portNumber,
+            controllerConnection: controllerId,
+            sharedPorts: [
+              { id: `shared-p1-${portNumber}`, name: 'Port 1', maxPixels: maxPixelsPerPort, currentPixels: 0 },
+              { id: `shared-p2-${portNumber}`, name: 'Port 2', maxPixels: maxPixelsPerPort, currentPixels: 0 },
+              { id: `shared-p3-${portNumber}`, name: 'Port 3', maxPixels: maxPixelsPerPort, currentPixels: 0 },
+              { id: `shared-p4-${portNumber}`, name: 'Port 4', maxPixels: maxPixelsPerPort, currentPixels: 0 },
+            ],
+            connectedReceivers: [],
+            position: { x: diffPortX, y: diffPortY },
+          };
+
+          addDifferentialPort(differentialPort);
+          differentialPorts.set(portNumber, differentialPort);
+
+          // Wire from controller to differential port
+          addWire({
+            id: `wire-ctrl-diffport-${Date.now()}-${portNumber}`,
+            color: 'blue',
+            from: { nodeId: controllerId },
+            to: { nodeId: diffPortId },
+            label: `Diff ${portNumber}`,
+          });
+        });
+
+        // Create receivers and wire them to differential ports
+        Object.keys(receiversByDiffPort).forEach((portNumStr) => {
           const differentialPortNumber = parseInt(portNumStr, 10);
-          const receiversInChain = receiversByPort[differentialPortNumber];
+          const receiversInChain = receiversByDiffPort[differentialPortNumber];
+          const differentialPort = differentialPorts.get(differentialPortNumber)!;
 
-          // Determine which differential and port
-          const diffIndex = Math.floor((differentialPortNumber - 1) / 4);
-          const portIndex = (differentialPortNumber - 1) % 4;
-          const differential = differentials[diffIndex];
-          const diffPortId = differential.ports[portIndex].id;
-
-          // Calculate base position for this daisy chain (spread around circle)
+          // Calculate base position for receivers (further out from differential port)
           const chainAngle = ((differentialPortNumber - 1) / 16) * 2 * Math.PI;
           const baseX = centerX + receiverRadius * Math.cos(chainAngle);
           const baseY = centerY + receiverRadius * Math.sin(chainAngle);
 
-          // Track receiver IDs in this chain for wiring
           const chainReceiverIds: string[] = [];
 
-          // Position receivers in a line radiating outward from the differential port
+          // Position receivers in a line radiating outward
           receiversInChain.forEach((receiverData: any, chainIdx: number) => {
             const receiverNumber = chainIdx; // 0, 1, 2, ... in the daisy chain
-
-            // Offset each subsequent receiver further out in the chain (increased spacing for ports)
-            const chainOffset = chainIdx * 350; // 350px spacing for receiver + ports
+            const chainOffset = chainIdx * 350; // 350px spacing between receivers
             const recX = baseX + chainOffset * Math.cos(chainAngle);
             const recY = baseY + chainOffset * Math.sin(chainAngle);
 
@@ -374,31 +383,31 @@ export const Toolbar = ({ selectedWireColor, onWireColorChange }: ToolbarProps) 
             const receiver: Receiver = {
               id: receiverId,
               name: receiverData.name,
-              dipSwitch: String(receiverNumber).padStart(4, '0'), // "0000", "0001", "0002", etc.
+              dipSwitch: String(receiverNumber).padStart(4, '0'),
               differentialPortNumber: differentialPortNumber,
               ports: receiverData.ports,
               position: { x: recX, y: recY },
               controllerConnection: controllerId,
-              differentialConnection: differential.id,
+              differentialConnection: differentialPort.id,
             };
 
             addReceiver(receiver);
 
-            // Port nodes are automatically created by DiagramCanvas based on receiver.ports
+            // Add receiver ID to differential port's connectedReceivers
+            differentialPort.connectedReceivers.push(receiverId);
 
             if (chainIdx === 0) {
-              // First receiver in chain: connect from differential port
+              // First receiver: connect from differential port
               addWire({
-                id: `wire-diff-rec-${timestamp}-${differentialPortNumber}-${chainIdx}`,
+                id: `wire-diffport-rec-${timestamp}-${differentialPortNumber}-${chainIdx}`,
                 color: 'blue',
-                from: { nodeId: differential.id, portId: diffPortId },
+                from: { nodeId: differentialPort.id },
                 to: { nodeId: receiverId, portId: 'receiver-input' },
                 label: 'CAT5',
               });
             } else {
-              // Subsequent receivers: connect from previous receiver in chain
+              // Subsequent receivers: daisy chain from previous receiver
               const prevReceiverId = chainReceiverIds[chainIdx - 1];
-              // Use output-1 for first daisy chain output
               addWire({
                 id: `wire-chain-${timestamp}-${differentialPortNumber}-${chainIdx}`,
                 color: 'blue',
@@ -408,101 +417,163 @@ export const Toolbar = ({ selectedWireColor, onWireColorChange }: ToolbarProps) 
               });
             }
           });
+
+          // Update differential port with connected receivers
+          addDifferentialPort(differentialPort);
         });
 
-        alert(`Imported ${xlController.name} with ${receiversData.length} receiver(s) and ${controllerModels.length} model(s)!`);
+        console.log(`Imported ${xlController.name} with ${receiversData.length} receiver(s) and ${controllerModels.length} model(s)!`);
       } else {
         // Non-HinksPix controller: simple layout
-        alert(`Imported ${xlController.name}`);
+        console.log(`Imported ${xlController.name}`);
       }
     });
   };
 
-  // Helper function to group models into receivers
-  const createReceiversFromModels = (models: any[]) => {
-    if (models.length === 0) return [];
+  // Helper function to group models into receivers using xLights port assignments
+// Logic: Every 4 consecutive xLights ports = 1 receiver group
+// If a group has SmartRemote 2 models, create an additional daisy-chained receiver
+const createReceiversFromModels = (models: any[]) => {
+  if (models.length === 0) return [];
 
-    // Sort models by start channel
-    const sortedModels = [...models].sort((a, b) => a.startChannel - b.startChannel);
+  // Filter out models without valid start channels
+  const validModels = models.filter(m => m.startChannel !== null && m.startChannel > 0);
 
-    // Group models into receivers (every ~4 universe range = 1 receiver with 4 ports)
-    // Each port can handle 1024 pixels (HinksPix v3)
-    const receivers: any[] = [];
-    const portsPerReceiver = 4;
-    const maxPixelsPerPort = 1024;
+  if (validModels.length === 0) {
+    console.warn('No models with valid start channels found');
+    return [];
+  }
 
-    // Create a receiver for each logical grouping of models
-    // We'll distribute models across ports based on their pixel counts
-    let currentReceiver: any = null;
-    let currentPortIndex = 0;
-    let receiverIndex = 0;
+  console.log(`\n=== RECEIVER GROUPING (4 Ports Per Receiver) ===`);
+  console.log(`Total models: ${validModels.length}`);
 
-    const startNewReceiver = () => {
-      receiverIndex++;
-      currentPortIndex = 0;
-      currentReceiver = {
-        name: `Receiver ${receiverIndex}`,
-        dipSwitch: String(receiverIndex - 1).padStart(4, '0'),
-        ports: [
-          { id: `p1-${receiverIndex}`, name: 'Port 1', maxPixels: maxPixelsPerPort, currentPixels: 0, models: [] },
-          { id: `p2-${receiverIndex}`, name: 'Port 2', maxPixels: maxPixelsPerPort, currentPixels: 0, models: [] },
-          { id: `p3-${receiverIndex}`, name: 'Port 3', maxPixels: maxPixelsPerPort, currentPixels: 0, models: [] },
-          { id: `p4-${receiverIndex}`, name: 'Port 4', maxPixels: maxPixelsPerPort, currentPixels: 0, models: [] },
-        ],
-      };
-      receivers.push(currentReceiver);
-    };
-
-    startNewReceiver();
-
-    // Distribute models across receiver ports
-    for (const model of sortedModels) {
-      const pixelCount = model.pixelCount || 0;
-
-      if (!currentReceiver) {
-        startNewReceiver();
+  // Group models by xLights port number
+  const modelsByPort: { [port: number]: any[] } = {};
+  validModels.forEach(model => {
+    if (model.port !== null && model.port !== undefined) {
+      if (!modelsByPort[model.port]) {
+        modelsByPort[model.port] = [];
       }
+      modelsByPort[model.port].push(model);
+    }
+  });
 
-      // Try to add model to current port
-      let placed = false;
-      for (let attempts = 0; attempts < portsPerReceiver && !placed; attempts++) {
-        const port = currentReceiver.ports[currentPortIndex];
-        const remainingSpace = port.maxPixels - port.currentPixels;
+  const usedPorts = Object.keys(modelsByPort).map(p => parseInt(p)).sort((a, b) => a - b);
+  const maxPort = Math.max(...usedPorts);
 
-        if (pixelCount <= remainingSpace) {
-          // Model fits on current port
-          port.models.push({
-            name: model.name,
-            pixels: pixelCount,
-          });
-          port.currentPixels += pixelCount;
-          placed = true;
-        } else {
-          // Move to next port
-          currentPortIndex++;
-          if (currentPortIndex >= portsPerReceiver) {
-            // Start a new receiver
-            startNewReceiver();
+  console.log(`xLights ports in use: ${usedPorts.length} (from port ${usedPorts[0]} to ${maxPort})`);
+
+  // Group ports into receiver groups (every 4 ports = 1 group)
+  // Ports 1-4 = Group 1, Ports 5-8 = Group 2, etc.
+  const receiverGroupCount = Math.ceil(maxPort / 4);
+
+  console.log(`\nGrouping into ${receiverGroupCount} receiver groups (4 ports each):\n`);
+
+  const receivers: any[] = [];
+  const maxPixelsPerPort = 1024;
+
+  for (let groupIdx = 0; groupIdx < receiverGroupCount; groupIdx++) {
+    const groupStartPort = groupIdx * 4 + 1;
+    const groupEndPort = groupStartPort + 3;
+
+    // Check which ports in this group have models
+    const portsInGroup = [];
+    let hasSmartRemote1 = false;
+    let hasSmartRemote2 = false;
+
+    for (let port = groupStartPort; port <= groupEndPort; port++) {
+      if (modelsByPort[port]) {
+        portsInGroup.push(port);
+
+        // Check SmartRemote values
+        modelsByPort[port].forEach(model => {
+          if (model.smartRemote === 1) hasSmartRemote1 = true;
+          if (model.smartRemote === 2) hasSmartRemote2 = true;
+        });
+      }
+    }
+
+    // Skip groups with no models
+    if (portsInGroup.length === 0) continue;
+
+    console.log(`Group ${groupIdx + 1} (Ports ${groupStartPort}-${groupEndPort}): ${portsInGroup.length} ports used`);
+    console.log(`  SmartRemote 1: ${hasSmartRemote1 ? 'Yes' : 'No'}, SmartRemote 2: ${hasSmartRemote2 ? 'Yes' : 'No'}`);
+
+    // Create receivers for this group
+    const smartRemotes = [];
+    if (hasSmartRemote1) smartRemotes.push(1);
+    if (hasSmartRemote2) smartRemotes.push(2);
+
+    smartRemotes.forEach(smartRemote => {
+      const receiverNumber = receivers.length + 1;
+
+      // Get first model for universe calculation
+      let firstModel = null;
+      for (let port = groupStartPort; port <= groupEndPort && !firstModel; port++) {
+        if (modelsByPort[port]) {
+          const modelsInPort = modelsByPort[port].filter(m => m.smartRemote === smartRemote);
+          if (modelsInPort.length > 0) {
+            firstModel = modelsInPort[0];
           }
         }
       }
 
-      if (!placed) {
-        // Model doesn't fit anywhere, create new receiver
-        startNewReceiver();
-        const port = currentReceiver.ports[0];
-        port.models.push({
-          name: model.name,
-          pixels: pixelCount,
-        });
-        port.currentPixels += pixelCount;
-        currentPortIndex = 0;
-      }
-    }
+      const universe = firstModel ? Math.floor((firstModel.startChannel - 1) / 510) + 1 : 1;
 
-    // Filter out receivers with no models
-    return receivers.filter(r => r.ports.some((p: any) => p.models.length > 0));
-  };
+      const receiver: any = {
+        name: `Receiver ${receiverNumber}`,
+        dipSwitch: String(receivers.length).padStart(4, '0'),
+        universe: universe,
+        xlPortStart: groupStartPort,
+        xlPortEnd: groupEndPort,
+        smartRemote: smartRemote,
+        ports: [
+          { id: `p1-${receiverNumber}`, name: 'Port 1', maxPixels: maxPixelsPerPort, currentPixels: 0, models: [], xlPort: groupStartPort },
+          { id: `p2-${receiverNumber}`, name: 'Port 2', maxPixels: maxPixelsPerPort, currentPixels: 0, models: [], xlPort: groupStartPort + 1 },
+          { id: `p3-${receiverNumber}`, name: 'Port 3', maxPixels: maxPixelsPerPort, currentPixels: 0, models: [], xlPort: groupStartPort + 2 },
+          { id: `p4-${receiverNumber}`, name: 'Port 4', maxPixels: maxPixelsPerPort, currentPixels: 0, models: [], xlPort: groupStartPort + 3 },
+        ],
+      };
+
+      // Distribute models into the 4 ports based on their xLights port number
+      for (let portIdx = 0; portIdx < 4; portIdx++) {
+        const xlPort = groupStartPort + portIdx;
+        const receiverPort = receiver.ports[portIdx];
+
+        if (modelsByPort[xlPort]) {
+          const modelsForThisReceiver = modelsByPort[xlPort]
+            .filter(m => m.smartRemote === smartRemote)
+            .sort((a, b) => a.startChannel - b.startChannel);
+
+          modelsForThisReceiver.forEach(model => {
+            receiverPort.models.push({
+              name: model.name,
+              pixels: model.pixelCount || 0,
+            });
+            receiverPort.currentPixels += model.pixelCount || 0;
+          });
+        }
+      }
+
+      console.log(`  → Receiver ${receiverNumber} (SmartRemote ${smartRemote}):`);
+      receiver.ports.forEach((port: any, pIdx: number) => {
+        if (port.models.length > 0) {
+          const utilization = ((port.currentPixels / maxPixelsPerPort) * 100).toFixed(1);
+          console.log(`      Port ${pIdx + 1} (xL Port ${port.xlPort}): ${port.models.length} models, ${port.currentPixels}px (${utilization}% full)`);
+        }
+      });
+
+      receivers.push(receiver);
+    });
+
+    console.log(`  Created ${smartRemotes.length} receiver(s) for this group\n`);
+  }
+
+  console.log(`\nTotal receivers created: ${receivers.length}`);
+  console.log('======================\n');
+
+  return receivers;
+};
 
   return (
     <div
@@ -518,7 +589,7 @@ export const Toolbar = ({ selectedWireColor, onWireColorChange }: ToolbarProps) 
         maxWidth: '300px',
       }}
     >
-      <h3 style={{ margin: '0 0 10px 0', fontSize: '16px' }}>xDiagram Toolbar</h3>
+      <h3 style={{ margin: '0 0 10px 0', fontSize: '16px' }}>xWire Toolbar</h3>
 
       <div style={{ marginBottom: '15px' }}>
         <h4 style={{ fontSize: '12px', margin: '0 0 5px 0', color: '#666' }}>
@@ -584,6 +655,32 @@ export const Toolbar = ({ selectedWireColor, onWireColorChange }: ToolbarProps) 
         </div>
         <div style={{ fontSize: '10px', marginTop: '5px', color: '#666' }}>
           Red=Power, Black=Data, Blue=Network
+        </div>
+      </div>
+
+      <div style={{ marginBottom: '15px' }}>
+        <h4 style={{ fontSize: '12px', margin: '0 0 5px 0', color: '#666' }}>
+          Model Settings
+        </h4>
+        <label
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            fontSize: '11px',
+            cursor: 'pointer',
+            padding: '4px 0',
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={autoSnapEnabled}
+            onChange={(e) => onAutoSnapChange(e.target.checked)}
+            style={{ marginRight: '6px', cursor: 'pointer' }}
+          />
+          Auto-snap models when dragging
+        </label>
+        <div style={{ fontSize: '9px', marginTop: '2px', color: '#666', paddingLeft: '20px' }}>
+          Automatically align models in same port
         </div>
       </div>
 

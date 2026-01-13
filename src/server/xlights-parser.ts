@@ -64,33 +64,151 @@ export class XLightsParser {
           continue;
         }
 
+        // DEBUG: Log first few models to verify channel parsing
+        if (controllerInfo.models.length < 5) {
+          console.log(`DEBUG Model ${controllerInfo.models.length}:`, {
+            name: attrs.name,
+            controller: controllerName,
+            startChannelRaw: attrs.StartChannel,
+          });
+        }
+
         // Parse pixel count - different model types store this differently
         let pixelCount = 0;
         const displayAs = attrs.DisplayAs || '';
+        const modelName = attrs.name || attrs.Name || 'Unknown';
 
-        // For most models, parm2 is pixel count
-        // But for some types (like Poly Line), we need to look at other params
-        if (attrs.parm2) {
-          pixelCount = parseInt(attrs.parm2, 10);
-        } else if (attrs.parm1) {
-          pixelCount = parseInt(attrs.parm1, 10);
+        // DEBUG: Log models with "Arch" or "Pumpkin" in the name or DisplayAs
+        if (modelName.toLowerCase().includes('arch') || displayAs.toLowerCase().includes('arch') ||
+            modelName.toLowerCase().includes('pumpkin')) {
+          console.log(`DEBUG Model: ${modelName}`, {
+            displayAs: displayAs,
+            parm1: attrs.parm1,
+            parm2: attrs.parm2,
+            parm3: attrs.parm3,
+            PixelCount: attrs.PixelCount,
+            hasCustomModel: !!model.CustomModel,
+          });
         }
 
-        // Fallback: calculate from string count and pixels per string
-        if (!pixelCount && attrs.parm1 && attrs.parm3) {
-          const stringCount = parseInt(attrs.parm1, 10) || 0;
-          const pixelsPerString = parseInt(attrs.parm3, 10) || 0;
-          pixelCount = stringCount * pixelsPerString;
+        // First check for direct PixelCount attribute (most reliable)
+        if (attrs.PixelCount) {
+          pixelCount = parseInt(attrs.PixelCount, 10);
+        } else {
+          // Handle different DisplayAs types based on xLights conventions
+          switch (displayAs) {
+            case 'Matrix':
+            case 'Vert Matrix':
+            case 'Horiz Matrix':
+              // Matrix: parm1 (height/strands) * parm2 (width/nodes per strand)
+              const height = parseInt(attrs.parm1, 10) || 0;
+              const width = parseInt(attrs.parm2, 10) || 0;
+              pixelCount = height * width;
+              break;
+
+            case 'Single Line':
+            case 'Poly Line':
+              // Poly Line: parm2 is the total number of nodes
+              // parm1 is typically the number of line segments
+              pixelCount = parseInt(attrs.parm2, 10) || 0;
+              break;
+
+            case 'Arches':
+              // Arches: parm2 is nodes
+              pixelCount = parseInt(attrs.parm2, 10) || 0;
+              break;
+
+            case 'Tree':
+              // Tree: Check multiple possible locations
+              if (attrs.parm1) {
+                pixelCount = parseInt(attrs.parm1, 10) || 0;
+              }
+              break;
+
+            case 'Custom':
+              // Custom: Parse CustomModel data first (most accurate)
+              if (model.CustomModel?.[0]) {
+                const customData = model.CustomModel[0]._ || model.CustomModel[0];
+                if (typeof customData === 'string') {
+                  // CustomModel data is a grid: rows separated by semicolons, columns by commas
+                  // Each cell contains a pixel index (or is empty)
+                  // Count unique pixel indices to get total pixel count
+                  const cells = customData.split(/[;,]/).filter(cell => cell.trim() !== '');
+                  const uniquePixels = new Set(cells.map(c => parseInt(c.trim(), 10))).size;
+                  pixelCount = uniquePixels;
+                }
+              }
+
+              // Fallback: Try parm1 if CustomModel parsing failed
+              if (!pixelCount && attrs.parm1) {
+                pixelCount = parseInt(attrs.parm1, 10) || 0;
+              }
+              break;
+
+            default:
+              // Generic fallback: try parm2, then parm1
+              if (attrs.parm2) {
+                pixelCount = parseInt(attrs.parm2, 10);
+              } else if (attrs.parm1) {
+                pixelCount = parseInt(attrs.parm1, 10);
+              }
+
+              // Last fallback: calculate from string count and pixels per string
+              if (!pixelCount && attrs.parm1 && attrs.parm3) {
+                const stringCount = parseInt(attrs.parm1, 10) || 0;
+                const pixelsPerString = parseInt(attrs.parm3, 10) || 0;
+                pixelCount = stringCount * pixelsPerString;
+              }
+          }
         }
+
+        // Parse start channel - xLights uses format "!ControllerName:ChannelNumber"
+        let startChannel: number | null = null;
+        const startChannelStr = attrs.StartChannel || attrs.startChannel || attrs.StartChan;
+
+        if (startChannelStr) {
+          // Format: "!Main:35008" -> extract channel number after colon
+          if (startChannelStr.includes(':')) {
+            const parts = startChannelStr.split(':');
+            const channelNum = parseInt(parts[1], 10);
+            if (!isNaN(channelNum)) {
+              startChannel = channelNum;
+            }
+          } else {
+            // Fallback: try to parse as plain number
+            const channelNum = parseInt(startChannelStr, 10);
+            if (!isNaN(channelNum)) {
+              startChannel = channelNum;
+            }
+          }
+        }
+
+        // Extract port and smart remote info from ControllerConnection
+        const controllerConn = model.ControllerConnection?.[0]?.$ || {};
+        const port = controllerConn.Port ? parseInt(controllerConn.Port, 10) : null;
+        const smartRemote = controllerConn.SmartRemote ? parseInt(controllerConn.SmartRemote, 10) : null;
 
         const modelInfo = {
           name: attrs.name || attrs.Name,
           controller: controllerName,
-          startChannel: parseInt(attrs.StartChannel || '0', 10),
+          startChannel: startChannel,
           pixelCount: pixelCount,
           displayAs: displayAs,
-          protocol: model.ControllerConnection?.[0]?.$?.Protocol || 'ws2811',
+          protocol: controllerConn.Protocol || 'ws2811',
+          port: port,
+          smartRemote: smartRemote,
         };
+
+        // DEBUG: Log Arch and Pumpkin models with calculated pixel count
+        if (modelName.toLowerCase().includes('arch') || modelName.toLowerCase().includes('pumpkin')) {
+          console.log(`  -> Calculated pixelCount for ${modelName}: ${pixelCount}`);
+        }
+
+        // DEBUG: Log parsed channel for first few models
+        if (controllerInfo.models.length < 5) {
+          const universe = startChannel ? Math.floor((startChannel - 1) / 510) + 1 : null;
+          console.log(`  -> Parsed channel: ${startChannel}, Universe: ${universe}, Port: ${port}, SmartRemote: ${smartRemote}`);
+        }
 
         controllerInfo.models.push(modelInfo);
 

@@ -7,6 +7,7 @@ import { WireColor } from './types/diagram';
 function App() {
   const { loadDiagram } = useDiagramStore();
   const [selectedWireColor, setSelectedWireColor] = useState<WireColor>('black');
+  const [autoSnapEnabled, setAutoSnapEnabled] = useState(true); // Auto-snap enabled by default
 
   useEffect(() => {
     // Load saved diagram on mount
@@ -44,8 +45,13 @@ function App() {
       <Toolbar
         selectedWireColor={selectedWireColor}
         onWireColorChange={setSelectedWireColor}
+        autoSnapEnabled={autoSnapEnabled}
+        onAutoSnapChange={setAutoSnapEnabled}
       />
-      <DiagramCanvas selectedWireColor={selectedWireColor} />
+      <DiagramCanvas
+        selectedWireColor={selectedWireColor}
+        autoSnapEnabled={autoSnapEnabled}
+      />
     </div>
   );
 }

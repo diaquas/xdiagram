@@ -16,6 +16,7 @@ import 'reactflow/dist/style.css';
 import { ControllerNode } from './nodes/ControllerNode';
 import { ReceiverNode } from './nodes/ReceiverNode';
 import { DifferentialNode } from './nodes/DifferentialNode';
+import { DifferentialPortNode } from './nodes/DifferentialPortNode';
 import { EthernetSwitchNode } from './nodes/EthernetSwitchNode';
 import { PowerSupplyNode } from './nodes/PowerSupplyNode';
 import { LabelNode } from './nodes/LabelNode';
@@ -28,6 +29,7 @@ const nodeTypes = {
   controller: ControllerNode,
   receiver: ReceiverNode,
   differential: DifferentialNode,
+  differentialPort: DifferentialPortNode,
   ethernetSwitch: EthernetSwitchNode,
   powerSupply: PowerSupplyNode,
   label: LabelNode,
@@ -50,13 +52,15 @@ const getWireColor = (color: WireColor): string => {
 
 interface DiagramCanvasProps {
   selectedWireColor: WireColor;
+  autoSnapEnabled: boolean;
 }
 
-export const DiagramCanvas = ({ selectedWireColor }: DiagramCanvasProps) => {
+export const DiagramCanvas = ({ selectedWireColor, autoSnapEnabled }: DiagramCanvasProps) => {
   const {
     controllers,
     receivers,
     differentials,
+    differentialPorts,
     ethernetSwitches,
     powerSupplies,
     labels,
@@ -65,12 +69,14 @@ export const DiagramCanvas = ({ selectedWireColor }: DiagramCanvasProps) => {
     updateController,
     updateReceiver,
     updateDifferential,
+    updateDifferentialPort,
     updateEthernetSwitch,
     updatePowerSupply,
     updateLabel,
     removeController,
     removeReceiver,
     removeDifferential,
+    removeDifferentialPort,
     removeEthernetSwitch,
     removePowerSupply,
     removeLabel,
@@ -167,6 +173,15 @@ export const DiagramCanvas = ({ selectedWireColor }: DiagramCanvasProps) => {
       });
     });
 
+    differentialPorts.forEach((differentialPort) => {
+      nodes.push({
+        id: differentialPort.id,
+        type: 'differentialPort',
+        position: differentialPort.position,
+        data: { differentialPort },
+      });
+    });
+
     ethernetSwitches.forEach((ethernetSwitch) => {
       nodes.push({
         id: ethernetSwitch.id,
@@ -196,7 +211,7 @@ export const DiagramCanvas = ({ selectedWireColor }: DiagramCanvasProps) => {
     });
 
     return nodes;
-  }, [controllers, receivers, differentials, ethernetSwitches, powerSupplies, labels]);
+  }, [controllers, receivers, differentials, differentialPorts, ethernetSwitches, powerSupplies, labels]);
 
   // Convert wires to React Flow edges
   const initialEdges: Edge[] = useMemo(() => {
@@ -326,15 +341,72 @@ export const DiagramCanvas = ({ selectedWireColor }: DiagramCanvasProps) => {
         updateReceiver(node.id, { position });
       } else if (nodeType === 'differential') {
         updateDifferential(node.id, { position });
+      } else if (nodeType === 'differentialPort') {
+        updateDifferentialPort(node.id, { position });
       } else if (nodeType === 'ethernetSwitch') {
         updateEthernetSwitch(node.id, { position });
       } else if (nodeType === 'powerSupply') {
         updatePowerSupply(node.id, { position });
       } else if (nodeType === 'label') {
         updateLabel(node.id, { position });
+      } else if (nodeType === 'model' && autoSnapEnabled) {
+        // Auto-snap models in the same port
+        const draggedPortId = node.data?.portId;
+
+        if (draggedPortId) {
+          // Find all model nodes that belong to the same port
+          const modelsInPort = nodes.filter(
+            (n) => n.type === 'model' && n.data?.portId === draggedPortId
+          );
+
+          if (modelsInPort.length > 1) {
+            // Sort models by their current Y position
+            const sortedModels = [...modelsInPort].sort((a, b) => a.position.y - b.position.y);
+
+            // Find the index of the dragged model in sorted list
+            const draggedIndex = sortedModels.findIndex((n) => n.id === node.id);
+
+            // Reposition all models with 55px vertical spacing
+            const spacing = 55;
+            const updates: any[] = [];
+
+            sortedModels.forEach((model, idx) => {
+              // Calculate new Y position relative to dragged model's position
+              const offsetFromDragged = idx - draggedIndex;
+              const newY = position.y + offsetFromDragged * spacing;
+
+              // Keep X position aligned with dragged model
+              const newX = position.x;
+
+              updates.push({
+                id: model.id,
+                position: { x: newX, y: newY },
+              });
+            });
+
+            // Update all model positions at once
+            setNodes((nds) =>
+              nds.map((n) => {
+                const update = updates.find((u) => u.id === n.id);
+                return update ? { ...n, position: update.position } : n;
+              })
+            );
+          }
+        }
       }
     },
-    [updateController, updateReceiver, updateDifferential, updateEthernetSwitch, updatePowerSupply, updateLabel]
+    [
+      updateController,
+      updateReceiver,
+      updateDifferential,
+      updateDifferentialPort,
+      updateEthernetSwitch,
+      updatePowerSupply,
+      updateLabel,
+      autoSnapEnabled,
+      nodes,
+      setNodes,
+    ]
   );
 
   // Handle node deletion (triggered by Delete key or programmatic deletion)
@@ -349,6 +421,8 @@ export const DiagramCanvas = ({ selectedWireColor }: DiagramCanvasProps) => {
           removeReceiver(node.id);
         } else if (nodeType === 'differential') {
           removeDifferential(node.id);
+        } else if (nodeType === 'differentialPort') {
+          removeDifferentialPort(node.id);
         } else if (nodeType === 'ethernetSwitch') {
           removeEthernetSwitch(node.id);
         } else if (nodeType === 'powerSupply') {
@@ -358,7 +432,7 @@ export const DiagramCanvas = ({ selectedWireColor }: DiagramCanvasProps) => {
         }
       });
     },
-    [removeController, removeReceiver, removeDifferential, removeEthernetSwitch, removePowerSupply, removeLabel]
+    [removeController, removeReceiver, removeDifferential, removeDifferentialPort, removeEthernetSwitch, removePowerSupply, removeLabel]
   );
 
   // Handle edge/wire deletion

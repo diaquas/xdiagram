@@ -35,6 +35,16 @@ export interface Receiver {
   differentialConnection?: string; // Which differential this receiver is connected to
 }
 
+export interface DifferentialPort {
+  id: string;
+  name: string;
+  portNumber: number; // 1-16 for HinksPix PRO V3
+  controllerConnection?: string; // Which controller this differential port belongs to
+  sharedPorts: Port[]; // 4 shared pixel ports (budget shared across all daisy-chained receivers)
+  connectedReceivers: string[]; // IDs of receivers connected to this differential port
+  position: { x: number; y: number };
+}
+
 export interface Differential {
   id: string;
   name: string;
@@ -76,6 +86,7 @@ export interface DiagramData {
   controllers: Controller[];
   receivers: Receiver[];
   differentials: Differential[];
+  differentialPorts: DifferentialPort[];
   ethernetSwitches: EthernetSwitch[];
   powerSupplies: PowerSupply[];
   wires: Wire[];

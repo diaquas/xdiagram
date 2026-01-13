@@ -16,6 +16,7 @@ import 'reactflow/dist/style.css';
 import { ControllerNode } from './nodes/ControllerNode';
 import { ReceiverNode } from './nodes/ReceiverNode';
 import { DifferentialNode } from './nodes/DifferentialNode';
+import { DifferentialPortNode } from './nodes/DifferentialPortNode';
 import { EthernetSwitchNode } from './nodes/EthernetSwitchNode';
 import { PowerSupplyNode } from './nodes/PowerSupplyNode';
 import { LabelNode } from './nodes/LabelNode';
@@ -28,6 +29,7 @@ const nodeTypes = {
   controller: ControllerNode,
   receiver: ReceiverNode,
   differential: DifferentialNode,
+  differentialPort: DifferentialPortNode,
   ethernetSwitch: EthernetSwitchNode,
   powerSupply: PowerSupplyNode,
   label: LabelNode,

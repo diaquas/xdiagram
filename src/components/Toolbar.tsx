@@ -264,6 +264,7 @@ export const Toolbar = ({ selectedWireColor, onWireColorChange, autoSnapEnabled,
       );
 
       console.log(`Importing ${xlController.name}: ${controllerModels.length} models found`);
+      console.log('Sample model data:', controllerModels.slice(0, 3));
 
       // Create controller node (HinksPix has no physical pixel ports)
       const ports = isHinksPix ? [] : xlController.outputs.map((output: any) => {
@@ -330,16 +331,28 @@ export const Toolbar = ({ selectedWireColor, onWireColorChange, autoSnapEnabled,
         }
 
         // Group receivers by differential port for daisy-chaining
+        console.log(`\n=== DAISY CHAIN DEBUG ===`);
+        console.log(`Total receivers created: ${receiversData.length}`);
+        console.log('Receiver names:', receiversData.map((r: any) => r.name));
+
         const receiversByPort: { [key: number]: any[] } = {};
         receiversData.forEach((receiverData: any, idx: number) => {
           // Calculate differential port number (1-16, cycling through 16 ports)
           const differentialPortNumber = (idx % 16) + 1;
+
+          console.log(`  Receiver ${idx} (${receiverData.name}) → Port ${differentialPortNumber}`);
 
           if (!receiversByPort[differentialPortNumber]) {
             receiversByPort[differentialPortNumber] = [];
           }
           receiversByPort[differentialPortNumber].push(receiverData);
         });
+
+        console.log('\nReceivers per port:');
+        Object.keys(receiversByPort).forEach(port => {
+          console.log(`  Port ${port}: ${receiversByPort[parseInt(port)].length} receiver(s)`);
+        });
+        console.log('======================\n');
 
         // Process each differential port's daisy chain
         Object.keys(receiversByPort).forEach((portNumStr) => {

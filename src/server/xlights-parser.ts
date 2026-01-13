@@ -64,12 +64,13 @@ export class XLightsParser {
           continue;
         }
 
-        // DEBUG: Log first model's attributes to see what's available
-        if (controllerInfo.models.length === 0) {
-          console.log('DEBUG: First model attributes:', Object.keys(attrs));
-          console.log('DEBUG: StartChannel value:', attrs.StartChannel);
-          console.log('DEBUG: startChannel value:', attrs.startChannel);
-          console.log('DEBUG: StartChan value:', attrs.StartChan);
+        // DEBUG: Log first few models to verify channel parsing
+        if (controllerInfo.models.length < 5) {
+          console.log(`DEBUG Model ${controllerInfo.models.length}:`, {
+            name: attrs.name,
+            controller: controllerName,
+            startChannelRaw: attrs.StartChannel,
+          });
         }
 
         // Parse pixel count - different model types store this differently
@@ -91,19 +92,25 @@ export class XLightsParser {
           pixelCount = stringCount * pixelsPerString;
         }
 
-        // Try multiple possible attribute names for start channel
-        let startChannel = 0;
-        if (attrs.StartChannel) {
-          startChannel = parseInt(attrs.StartChannel, 10);
-        } else if (attrs.startChannel) {
-          startChannel = parseInt(attrs.startChannel, 10);
-        } else if (attrs.StartChan) {
-          startChannel = parseInt(attrs.StartChan, 10);
-        }
+        // Parse start channel - xLights uses format "!ControllerName:ChannelNumber"
+        let startChannel: number | null = null;
+        const startChannelStr = attrs.StartChannel || attrs.startChannel || attrs.StartChan;
 
-        // If still 0 or NaN, set to null to indicate no channel data
-        if (!startChannel || isNaN(startChannel)) {
-          startChannel = null as any;
+        if (startChannelStr) {
+          // Format: "!Main:35008" -> extract channel number after colon
+          if (startChannelStr.includes(':')) {
+            const parts = startChannelStr.split(':');
+            const channelNum = parseInt(parts[1], 10);
+            if (!isNaN(channelNum)) {
+              startChannel = channelNum;
+            }
+          } else {
+            // Fallback: try to parse as plain number
+            const channelNum = parseInt(startChannelStr, 10);
+            if (!isNaN(channelNum)) {
+              startChannel = channelNum;
+            }
+          }
         }
 
         const modelInfo = {
@@ -114,6 +121,12 @@ export class XLightsParser {
           displayAs: displayAs,
           protocol: model.ControllerConnection?.[0]?.$?.Protocol || 'ws2811',
         };
+
+        // DEBUG: Log parsed channel for first few models
+        if (controllerInfo.models.length < 5) {
+          const universe = startChannel ? Math.floor((startChannel - 1) / 510) + 1 : null;
+          console.log(`  -> Parsed channel: ${startChannel}, Universe: ${universe}`);
+        }
 
         controllerInfo.models.push(modelInfo);
 

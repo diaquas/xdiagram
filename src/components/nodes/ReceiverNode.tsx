@@ -51,9 +51,10 @@ export const ReceiverNode = memo(({ data }: NodeProps<ReceiverNodeData>) => {
         border: '2px solid #48BB78',
         borderRadius: '8px',
         background: '#C6F6D5',
-        minWidth: '200px',
-        maxWidth: '250px',
+        width: '380px',
+        height: '280px',
         position: 'relative',
+        overflow: 'visible', // Allow child nodes to extend beyond
       }}
     >
       {/* Input connection square (left side) */}

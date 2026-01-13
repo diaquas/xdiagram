@@ -20,6 +20,7 @@ import { EthernetSwitchNode } from './nodes/EthernetSwitchNode';
 import { PowerSupplyNode } from './nodes/PowerSupplyNode';
 import { LabelNode } from './nodes/LabelNode';
 import { PortNode } from './nodes/PortNode';
+import { ModelNode } from './nodes/ModelNode';
 import { useDiagramStore } from '../store/diagramStore';
 import { WireColor } from '../types/diagram';
 
@@ -31,6 +32,7 @@ const nodeTypes = {
   powerSupply: PowerSupplyNode,
   label: LabelNode,
   port: PortNode,
+  model: ModelNode,
 };
 
 const getWireColor = (color: WireColor): string => {
@@ -94,9 +96,10 @@ export const DiagramCanvas = ({ selectedWireColor }: DiagramCanvasProps) => {
         type: 'receiver',
         position: receiver.position,
         data: { receiver },
+        style: { width: 380, height: 280 }, // Set explicit size for parent node
       });
 
-      // Create port nodes for each receiver port
+      // Create port nodes as children of receiver
       receiver.ports.forEach((port, portIdx) => {
         const receiverNumber = parseInt(receiver.dipSwitch, 10) || 0;
         const portNumber = portIdx + 1;
@@ -104,14 +107,17 @@ export const DiagramCanvas = ({ selectedWireColor }: DiagramCanvasProps) => {
           ? `${receiver.differentialPortNumber}:${receiverNumber}:${portNumber}`
           : `${receiverNumber}:${portNumber}`;
 
-        // Position ports in a row below the receiver
-        const portX = receiver.position.x + (portIdx - 1.5) * 80;
-        const portY = receiver.position.y + 180;
+        // Position ports relative to receiver (horizontal layout)
+        const portX = 40 + portIdx * 80; // Start at 40px from left, 80px spacing
+        const portY = 200; // 200px down from receiver top
 
         nodes.push({
           id: `${receiver.id}-port-${portIdx}`,
           type: 'port',
-          position: { x: portX, y: portY },
+          position: { x: portX, y: portY }, // Relative to parent
+          parentNode: receiver.id, // Make this a child of the receiver
+          extent: 'parent', // Constrain to parent bounds
+          draggable: false, // Ports can't be dragged independently
           data: {
             portNumber,
             fullAddress,
@@ -121,6 +127,26 @@ export const DiagramCanvas = ({ selectedWireColor }: DiagramCanvasProps) => {
             receiverId: receiver.id,
           },
         });
+
+        // Create model nodes for each model in this port
+        if (port.models && port.models.length > 0) {
+          port.models.forEach((model, modelIdx) => {
+            const modelY = portY + 80 + modelIdx * 40; // Stack vertically below port
+            nodes.push({
+              id: `${receiver.id}-port-${portIdx}-model-${modelIdx}`,
+              type: 'model',
+              position: { x: portX - 20, y: modelY }, // Relative to parent, centered under port
+              parentNode: receiver.id, // Child of receiver
+              extent: 'parent',
+              draggable: false,
+              data: {
+                name: model.name,
+                pixels: model.pixels,
+                portId: `${receiver.id}-port-${portIdx}`,
+              },
+            });
+          });
+        }
       });
     });
 

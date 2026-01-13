@@ -24,6 +24,7 @@ export const Toolbar = ({ selectedWireColor, onWireColorChange }: ToolbarProps) 
   const [xLightsRgbEffectsPath, setXLightsRgbEffectsPath] = useState('C:\\Holiday Lighting\\2026\\Test Layout\\xlights_rgbeffects.xml');
   const [isConnected, setIsConnected] = useState(false);
   const [availableControllers, setAvailableControllers] = useState<any[]>([]);
+  const [selectedControllers, setSelectedControllers] = useState<Set<string>>(new Set());
   const [controllerPortInfo, setControllerPortInfo] = useState<any>(null);
 
   const handleAddController = () => {
@@ -173,6 +174,9 @@ export const Toolbar = ({ selectedWireColor, onWireColorChange }: ToolbarProps) 
 
       setAvailableControllers(controllers);
 
+      // Select all controllers by default
+      setSelectedControllers(new Set(controllers.map((c: any) => c.name)));
+
       // If rgbeffects file path provided, parse it too for port mapping
       let portInfo = null;
       if (xLightsRgbEffectsPath) {
@@ -213,9 +217,24 @@ export const Toolbar = ({ selectedWireColor, onWireColorChange }: ToolbarProps) 
     }
   };
 
+  const toggleControllerSelection = (controllerName: string) => {
+    const newSelection = new Set(selectedControllers);
+    if (newSelection.has(controllerName)) {
+      newSelection.delete(controllerName);
+    } else {
+      newSelection.add(controllerName);
+    }
+    setSelectedControllers(newSelection);
+  };
+
   const handleImportControllers = () => {
     if (availableControllers.length === 0) {
       alert('No controllers available to import');
+      return;
+    }
+
+    if (selectedControllers.size === 0) {
+      alert('Please select at least one controller to import');
       return;
     }
 
@@ -230,7 +249,10 @@ export const Toolbar = ({ selectedWireColor, onWireColorChange }: ToolbarProps) 
     const differentialRadius = 400; // Distance from controller to differentials
     const receiverRadius = 1000; // Distance from controller to receivers
 
-    availableControllers.forEach((xlController, ctrlIndex) => {
+    // Filter to only selected controllers
+    const controllersToImport = availableControllers.filter(c => selectedControllers.has(c.name));
+
+    controllersToImport.forEach((xlController, ctrlIndex) => {
       const controllerId = `controller-${Date.now()}-${ctrlIndex}`;
       const isHinksPix = xlController.type.toLowerCase().includes('hinkspix');
 
@@ -607,18 +629,63 @@ export const Toolbar = ({ selectedWireColor, onWireColorChange }: ToolbarProps) 
           <button onClick={handleConnectXLights} style={buttonStyle}>
             Connect to xLights
           </button>
-          {isConnected && (
-            <button
-              onClick={handleImportControllers}
-              style={{
-                ...buttonStyle,
-                background: '#48BB78',
-                color: 'white',
+          {isConnected && availableControllers.length > 0 && (
+            <>
+              <div style={{
+                marginTop: '8px',
+                marginBottom: '4px',
+                fontSize: '11px',
                 fontWeight: 'bold',
-              }}
-            >
-              Import {availableControllers.length} Controller(s)
-            </button>
+                color: '#333',
+              }}>
+                Select Controllers to Import:
+              </div>
+              <div style={{
+                maxHeight: '150px',
+                overflowY: 'auto',
+                border: '1px solid #ddd',
+                borderRadius: '4px',
+                padding: '6px',
+                background: '#fafafa',
+              }}>
+                {availableControllers.map((controller) => (
+                  <label
+                    key={controller.name}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      padding: '4px 0',
+                      fontSize: '10px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedControllers.has(controller.name)}
+                      onChange={() => toggleControllerSelection(controller.name)}
+                      style={{ marginRight: '6px', cursor: 'pointer' }}
+                    />
+                    <span style={{ fontWeight: selectedControllers.has(controller.name) ? 'bold' : 'normal' }}>
+                      {controller.name} ({controller.type})
+                    </span>
+                  </label>
+                ))}
+              </div>
+              <button
+                onClick={handleImportControllers}
+                style={{
+                  ...buttonStyle,
+                  background: selectedControllers.size > 0 ? '#48BB78' : '#ccc',
+                  color: 'white',
+                  fontWeight: 'bold',
+                  marginTop: '8px',
+                  cursor: selectedControllers.size > 0 ? 'pointer' : 'not-allowed',
+                }}
+                disabled={selectedControllers.size === 0}
+              >
+                Import {selectedControllers.size} Controller(s)
+              </button>
+            </>
           )}
         </div>
       </div>

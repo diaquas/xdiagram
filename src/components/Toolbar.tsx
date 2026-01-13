@@ -296,11 +296,12 @@ export const Toolbar = ({ selectedWireColor, onWireColorChange, autoSnapEnabled,
 
         const receiversByDiffPort: { [key: number]: any[] } = {};
         receiversData.forEach((receiverData: any, idx: number) => {
-          // Map universe to differential port (1-16)
-          const universe = receiverData.universe || 1;
-          const differentialPortNumber = ((universe - 1) % 16) + 1;
+          // Map xLights port range to differential port
+          // xLights ports 1-4 = Diff Port 1, ports 5-8 = Diff Port 2, etc.
+          const xlPortStart = receiverData.xlPortStart || 1;
+          const differentialPortNumber = Math.floor((xlPortStart - 1) / 4) + 1;
 
-          console.log(`  Receiver ${idx + 1} (${receiverData.name}) [Universe ${universe}] → Diff Port ${differentialPortNumber}`);
+          console.log(`  Receiver ${idx + 1} (${receiverData.name}) [xLights Ports ${receiverData.xlPortStart}-${receiverData.xlPortEnd}] → Diff Port ${differentialPortNumber}`);
 
           if (!receiversByDiffPort[differentialPortNumber]) {
             receiversByDiffPort[differentialPortNumber] = [];

@@ -58,6 +58,7 @@ export const ReceiverNode = memo(({ data }: NodeProps<ReceiverNodeData>) => {
     >
       <Handle type="target" position={Position.Left} id="receiver-input" />
       <Handle type="target" position={Position.Top} id="receiver-input-top" />
+      <Handle type="source" position={Position.Right} id="receiver-output" style={{ background: '#48BB78' }} />
 
       {/* Receiver name - editable on double-click */}
       {isEditing ? (

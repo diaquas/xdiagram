@@ -81,30 +81,54 @@ export class XLightsParser {
 
       const controller: XLightsController = {
         name: attrs.Name || attrs.name || 'Unknown',
-        type: attrs.Type || attrs.type || attrs.Vendor || 'Unknown',
+        type: `${attrs.Vendor || attrs.vendor || ''} ${attrs.Model || attrs.model || ''}`.trim() || attrs.Type || attrs.type || 'Unknown',
         protocol: attrs.Protocol || attrs.protocol || 'ws2811',
         outputs: [],
       };
 
       // Parse outputs/ports - try multiple field names
-      const outputsArray = ctrlData.Output || ctrlData.output || ctrlData.Outputs || [];
+      // Some xLights files use <Output>, some use <network> (lowercase)
+      const outputsArray = ctrlData.Output || ctrlData.output || ctrlData.Outputs || ctrlData.network || [];
 
       if (outputsArray && outputsArray.length > 0) {
-        for (const outputData of outputsArray) {
+        for (let i = 0; i < outputsArray.length; i++) {
+          const outputData = outputsArray[i];
           const outputAttrs = outputData.$ || outputData;
+
+          // For <network> elements, BaudRate is the universe/port number, MaxChannels is the channel count
+          const portNumber = parseInt(
+            outputAttrs.Output ||
+            outputAttrs.output ||
+            outputAttrs.Number ||
+            outputAttrs.number ||
+            outputAttrs.BaudRate ||
+            outputAttrs.baudRate ||
+            (i + 1).toString(),
+            10
+          );
+
+          const channels = parseInt(
+            outputAttrs.Channels ||
+            outputAttrs.channels ||
+            outputAttrs.MaxChannels ||
+            outputAttrs.maxChannels ||
+            '0',
+            10
+          );
+
           const output: XLightsOutput = {
-            number: parseInt(outputAttrs.Output || outputAttrs.output || outputAttrs.Number || outputAttrs.number || '0', 10),
-            description: outputAttrs.Description || outputAttrs.description || '',
+            number: portNumber,
+            description: outputAttrs.Description || outputAttrs.description || `Universe ${portNumber}`,
             nullPixels: parseInt(outputAttrs.NullPixels || outputAttrs.nullPixels || '0', 10),
             startChannel: parseInt(outputAttrs.StartChannel || outputAttrs.startChannel || '0', 10),
-            channels: parseInt(outputAttrs.Channels || outputAttrs.channels || '0', 10),
-            protocol: outputAttrs.Protocol || outputAttrs.protocol || controller.protocol,
+            channels: channels,
+            protocol: outputAttrs.Protocol || outputAttrs.protocol || outputAttrs.NetworkType || outputAttrs.networkType || controller.protocol,
           };
           controller.outputs.push(output);
         }
       }
 
-      console.log(`Parsed controller: ${controller.name} with ${controller.outputs.length} outputs`);
+      console.log(`Parsed controller: ${controller.name} (${controller.type}) with ${controller.outputs.length} outputs`);
       controllers.push(controller);
     }
 

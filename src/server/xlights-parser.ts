@@ -64,6 +64,14 @@ export class XLightsParser {
           continue;
         }
 
+        // DEBUG: Log first model's attributes to see what's available
+        if (controllerInfo.models.length === 0) {
+          console.log('DEBUG: First model attributes:', Object.keys(attrs));
+          console.log('DEBUG: StartChannel value:', attrs.StartChannel);
+          console.log('DEBUG: startChannel value:', attrs.startChannel);
+          console.log('DEBUG: StartChan value:', attrs.StartChan);
+        }
+
         // Parse pixel count - different model types store this differently
         let pixelCount = 0;
         const displayAs = attrs.DisplayAs || '';
@@ -83,10 +91,25 @@ export class XLightsParser {
           pixelCount = stringCount * pixelsPerString;
         }
 
+        // Try multiple possible attribute names for start channel
+        let startChannel = 0;
+        if (attrs.StartChannel) {
+          startChannel = parseInt(attrs.StartChannel, 10);
+        } else if (attrs.startChannel) {
+          startChannel = parseInt(attrs.startChannel, 10);
+        } else if (attrs.StartChan) {
+          startChannel = parseInt(attrs.StartChan, 10);
+        }
+
+        // If still 0 or NaN, set to null to indicate no channel data
+        if (!startChannel || isNaN(startChannel)) {
+          startChannel = null as any;
+        }
+
         const modelInfo = {
           name: attrs.name || attrs.Name,
           controller: controllerName,
-          startChannel: parseInt(attrs.StartChannel || '0', 10),
+          startChannel: startChannel,
           pixelCount: pixelCount,
           displayAs: displayAs,
           protocol: model.ControllerConnection?.[0]?.$?.Protocol || 'ws2811',

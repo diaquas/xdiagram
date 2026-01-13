@@ -76,6 +76,18 @@ export class XLightsParser {
         // Parse pixel count - different model types store this differently
         let pixelCount = 0;
         const displayAs = attrs.DisplayAs || '';
+        const modelName = attrs.name || attrs.Name || 'Unknown';
+
+        // DEBUG: Log models with "Arch" in the name or DisplayAs
+        if (modelName.toLowerCase().includes('arch') || displayAs.toLowerCase().includes('arch')) {
+          console.log(`DEBUG Arch Model: ${modelName}`, {
+            displayAs: displayAs,
+            parm1: attrs.parm1,
+            parm2: attrs.parm2,
+            parm3: attrs.parm3,
+            PixelCount: attrs.PixelCount,
+          });
+        }
 
         // First check for direct PixelCount attribute (most reliable)
         if (attrs.PixelCount) {
@@ -180,6 +192,11 @@ export class XLightsParser {
           port: port,
           smartRemote: smartRemote,
         };
+
+        // DEBUG: Log Arch models with calculated pixel count
+        if (modelName.toLowerCase().includes('arch')) {
+          console.log(`  -> Calculated pixelCount for ${modelName}: ${pixelCount}`);
+        }
 
         // DEBUG: Log parsed channel for first few models
         if (controllerInfo.models.length < 5) {

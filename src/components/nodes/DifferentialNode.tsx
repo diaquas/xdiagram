@@ -20,12 +20,13 @@ export const DifferentialNode = memo(({ data }: NodeProps<DifferentialNodeData>)
   return (
     <div
       style={{
-        padding: '12px',
+        padding: '16px',
+        paddingBottom: '40px', // Extra space for connection squares
         border: '2px solid #805AD5',
         borderRadius: '8px',
         background: '#E9D8FD',
-        width: '280px',
-        minHeight: '180px',
+        width: '240px',
+        minHeight: '200px',
         position: 'relative',
       }}
     >
@@ -46,30 +47,13 @@ export const DifferentialNode = memo(({ data }: NodeProps<DifferentialNodeData>)
         <Handle type="target" position={Position.Top} id="diff-board-input" style={{ opacity: 0 }} />
       </div>
 
-      {/* Output connection (bottom center) */}
-      <div
-        style={{
-          position: 'absolute',
-          left: '50%',
-          bottom: '-12px',
-          transform: 'translateX(-50%)',
-          width: '20px',
-          height: '20px',
-          border: '2px solid #805AD5',
-          background: 'white',
-          borderRadius: '2px',
-        }}
-      >
-        <Handle type="source" position={Position.Bottom} id="diff-board-output" style={{ opacity: 0 }} />
-      </div>
-
       {/* Board title */}
-      <div style={{ fontWeight: 'bold', marginBottom: '8px', color: '#553C9A', fontSize: '14px', textAlign: 'center' }}>
+      <div style={{ fontWeight: 'bold', marginBottom: '16px', color: '#553C9A', fontSize: '16px', textAlign: 'center' }}>
         {differential.name}
       </div>
 
-      {/* 4 Differential Ports */}
-      <div style={{ fontSize: '11px', color: '#553C9A' }}>
+      {/* 4 Differential Ports with detailed info */}
+      <div style={{ marginBottom: '12px' }}>
         {boardPorts.map((port) => {
           if (!port) return null;
 
@@ -86,28 +70,75 @@ export const DifferentialNode = memo(({ data }: NodeProps<DifferentialNodeData>)
 
           const totalMaxPixels = port.sharedPorts.reduce((sum, p) => sum + p.maxPixels, 0);
           const utilization = totalMaxPixels > 0 ? ((totalPixels / totalMaxPixels) * 100).toFixed(0) : '0';
+          const isOverCapacity = totalPixels > totalMaxPixels;
 
           return (
             <div
               key={port.id}
               style={{
-                padding: '4px 8px',
-                margin: '4px 0',
+                padding: '8px 12px',
+                marginBottom: '8px',
                 background: 'white',
-                borderRadius: '4px',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                border: '1px solid #D6BCFA',
+                borderRadius: '6px',
+                border: `2px solid ${isOverCapacity ? '#FC8181' : '#D6BCFA'}`,
               }}
             >
-              <span style={{ fontWeight: 'bold', color: '#553C9A' }}>Port {port.portNumber}</span>
-              <span style={{ fontSize: '10px', color: '#6B46C1' }}>
+              {/* Port number */}
+              <div style={{ fontWeight: 'bold', color: '#553C9A', fontSize: '13px', marginBottom: '4px' }}>
+                Port {port.portNumber}
+              </div>
+
+              {/* Pixel count */}
+              <div style={{
+                fontSize: '14px',
+                fontWeight: 'bold',
+                color: isOverCapacity ? '#C53030' : '#38A169',
+                marginBottom: '2px'
+              }}>
+                {totalPixels}/{totalMaxPixels}
+              </div>
+
+              {/* Receiver count and utilization */}
+              <div style={{ fontSize: '11px', color: '#6B46C1' }}>
                 {port.connectedReceivers.length} Rx • {utilization}%
-              </span>
+              </div>
             </div>
           );
         })}
+      </div>
+
+      {/* Output connection squares at bottom (representing 4 differential outputs) */}
+      <div style={{
+        position: 'absolute',
+        bottom: '8px',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        display: 'flex',
+        gap: '12px',
+      }}>
+        {[1, 2, 3, 4].map((idx) => (
+          <div
+            key={idx}
+            style={{
+              width: '24px',
+              height: '24px',
+              border: '2px solid #805AD5',
+              background: 'white',
+              borderRadius: '3px',
+            }}
+          />
+        ))}
+        {/* Single centered output handle */}
+        <Handle
+          type="source"
+          position={Position.Bottom}
+          id="diff-board-output"
+          style={{
+            opacity: 0,
+            left: '50%',
+            transform: 'translateX(-50%)',
+          }}
+        />
       </div>
     </div>
   );

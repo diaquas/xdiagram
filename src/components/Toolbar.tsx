@@ -398,8 +398,8 @@ export const Toolbar = ({ selectedWireColor, onWireColorChange, autoSnapEnabled,
 
         // Create receivers and wire them to differential boards
         // Position receivers below their respective board
-        const receiverVerticalSpacing = 200; // Vertical spacing between stacked receivers
-        const receiversStartY = boardY + 250; // Start below differential boards
+        const receiverVerticalSpacing = 180; // Vertical spacing between stacked receivers (increased for cleaner view)
+        const receiversStartY = boardY + 300; // Start below differential boards (more space)
 
         // Track receivers per board for positioning
         const receiversPerBoard: Map<number, number> = new Map();

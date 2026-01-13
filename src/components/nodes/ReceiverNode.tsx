@@ -57,13 +57,13 @@ export const ReceiverNode = memo(({ data }: NodeProps<ReceiverNodeData>) => {
         overflow: 'visible', // Allow child nodes to extend beyond
       }}
     >
-      {/* Input connection square (left side) */}
+      {/* Input connection square (top center) */}
       <div
         style={{
           position: 'absolute',
-          left: '-12px',
-          top: '50%',
-          transform: 'translateY(-50%)',
+          left: '50%',
+          top: '-12px',
+          transform: 'translateX(-50%)',
           width: '20px',
           height: '20px',
           border: '2px solid #48BB78',
@@ -71,14 +71,14 @@ export const ReceiverNode = memo(({ data }: NodeProps<ReceiverNodeData>) => {
           borderRadius: '2px',
         }}
       >
-        <Handle type="target" position={Position.Left} id="receiver-input" style={{ opacity: 0 }} />
+        <Handle type="target" position={Position.Top} id="receiver-input" style={{ opacity: 0 }} />
       </div>
 
-      {/* Output connection squares (right side) */}
+      {/* Output connection squares (left side - for daisy chaining down) */}
       <div
         style={{
           position: 'absolute',
-          right: '-12px',
+          left: '-12px',
           top: '35%',
           transform: 'translateY(-50%)',
           width: '20px',
@@ -88,13 +88,13 @@ export const ReceiverNode = memo(({ data }: NodeProps<ReceiverNodeData>) => {
           borderRadius: '2px',
         }}
       >
-        <Handle type="source" position={Position.Right} id="receiver-output-1" style={{ opacity: 0 }} />
+        <Handle type="source" position={Position.Left} id="receiver-output-1" style={{ opacity: 0 }} />
       </div>
 
       <div
         style={{
           position: 'absolute',
-          right: '-12px',
+          left: '-12px',
           top: '65%',
           transform: 'translateY(-50%)',
           width: '20px',
@@ -104,7 +104,7 @@ export const ReceiverNode = memo(({ data }: NodeProps<ReceiverNodeData>) => {
           borderRadius: '2px',
         }}
       >
-        <Handle type="source" position={Position.Right} id="receiver-output-2" style={{ opacity: 0 }} />
+        <Handle type="source" position={Position.Left} id="receiver-output-2" style={{ opacity: 0 }} />
       </div>
 
       {/* Receiver number and address path in top-left */}

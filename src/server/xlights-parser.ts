@@ -94,8 +94,16 @@ export class XLightsParser {
 
             case 'Single Line':
             case 'Poly Line':
-              // Single/Poly Line: parm1 is node count
-              pixelCount = parseInt(attrs.parm1, 10) || 0;
+              // Single/Poly Line: parm1 (strands) * parm3 (nodes per strand)
+              // If parm3 doesn't exist, fall back to just parm1
+              const strands = parseInt(attrs.parm1, 10) || 0;
+              const nodesPerStrand = parseInt(attrs.parm3, 10) || 0;
+              if (nodesPerStrand > 0) {
+                pixelCount = strands * nodesPerStrand;
+              } else {
+                // Fallback: parm1 might be total node count
+                pixelCount = strands;
+              }
               break;
 
             case 'Arches':

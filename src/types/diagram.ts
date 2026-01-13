@@ -5,6 +5,7 @@ export interface Port {
   name: string;
   maxPixels: number;
   currentPixels: number;
+  universe?: number; // xLights universe number (optional metadata)
 }
 
 export interface Controller {

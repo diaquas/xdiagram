@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
 import { Controller } from '../../types/diagram';
 
@@ -8,6 +8,15 @@ interface ControllerNodeData {
 
 export const ControllerNode = memo(({ data }: NodeProps<ControllerNodeData>) => {
   const { controller } = data;
+  const [expanded, setExpanded] = useState(false);
+
+  // For controllers with many ports, show compact summary
+  const shouldShowCompact = controller.ports.length > 8;
+  const portsToShow = expanded || !shouldShowCompact ? controller.ports : controller.ports.slice(0, 4);
+
+  // Calculate total pixels capacity
+  const totalMaxPixels = controller.ports.reduce((sum, port) => sum + port.maxPixels, 0);
+  const totalCurrentPixels = controller.ports.reduce((sum, port) => sum + port.currentPixels, 0);
 
   return (
     <div
@@ -17,6 +26,7 @@ export const ControllerNode = memo(({ data }: NodeProps<ControllerNodeData>) => 
         borderRadius: '8px',
         background: '#E8F4FD',
         minWidth: '200px',
+        maxWidth: '280px',
       }}
     >
       <Handle type="target" position={Position.Left} />
@@ -24,16 +34,34 @@ export const ControllerNode = memo(({ data }: NodeProps<ControllerNodeData>) => 
       <Handle type="source" position={Position.Bottom} />
       <Handle type="target" position={Position.Top} />
 
-      <div style={{ fontWeight: 'bold', marginBottom: '8px', color: '#2C5282' }}>
+      <div style={{ fontWeight: 'bold', marginBottom: '4px', color: '#2C5282' }}>
         {controller.name}
       </div>
-      <div style={{ fontSize: '12px', color: '#4A5568', marginBottom: '8px' }}>
+      <div style={{ fontSize: '11px', color: '#4A5568', marginBottom: '8px' }}>
         {controller.type}
       </div>
 
       {controller.ports.length > 0 && (
         <div style={{ fontSize: '11px' }}>
-          {controller.ports.map((port) => (
+          {/* Summary header for controllers with many ports */}
+          {shouldShowCompact && (
+            <div
+              style={{
+                padding: '6px',
+                marginBottom: '4px',
+                background: '#2C5282',
+                color: 'white',
+                borderRadius: '4px',
+                fontWeight: 'bold',
+                textAlign: 'center',
+              }}
+            >
+              {controller.ports.length} Ports • {totalCurrentPixels}/{totalMaxPixels} px
+            </div>
+          )}
+
+          {/* Port list */}
+          {portsToShow.map((port) => (
             <div
               key={port.id}
               style={{
@@ -43,6 +71,7 @@ export const ControllerNode = memo(({ data }: NodeProps<ControllerNodeData>) => 
                 borderRadius: '4px',
                 display: 'flex',
                 justifyContent: 'space-between',
+                fontSize: '10px',
               }}
             >
               <span>{port.name}:</span>
@@ -51,6 +80,29 @@ export const ControllerNode = memo(({ data }: NodeProps<ControllerNodeData>) => 
               </span>
             </div>
           ))}
+
+          {/* Show more/less button */}
+          {shouldShowCompact && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setExpanded(!expanded);
+              }}
+              style={{
+                width: '100%',
+                padding: '4px',
+                marginTop: '4px',
+                background: '#4A90E2',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                fontSize: '10px',
+                cursor: 'pointer',
+              }}
+            >
+              {expanded ? `▲ Show Less` : `▼ Show All ${controller.ports.length} Ports`}
+            </button>
+          )}
         </div>
       )}
     </div>

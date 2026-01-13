@@ -398,18 +398,21 @@ export const Toolbar = ({ selectedWireColor, onWireColorChange, autoSnapEnabled,
 
         // Create receivers and wire them to differential boards
         // Position receivers below their respective differential port (not board)
-        const receiverVerticalSpacing = 250; // Vertical spacing between receivers in same column
         const receiversStartY = boardY + 400; // Start much further below differential boards
         const receiverHorizontalSpacing = 450; // Wide horizontal spacing between port columns
+        const receiverBoxHeight = 120; // Height of receiver box
+        const modelStartOffset = 200; // Distance from receiver to first model
+        const modelVerticalSpacing = 90; // Spacing between stacked models
+        const receiverPadding = 50; // Padding between bottom of models and next receiver
 
         // Calculate starting X for receiver columns (spread across 16 differential ports)
         const totalReceiverWidth = (16 - 1) * receiverHorizontalSpacing;
         const receiversStartX = centerX - (totalReceiverWidth / 2);
 
-        // Track receivers per differential port (1-16) for vertical stacking
-        const receiversPerPort: Map<number, number> = new Map();
+        // Track current Y position per differential port (1-16) for dynamic vertical positioning
+        const currentYPerPort: Map<number, number> = new Map();
         for (let i = 1; i <= 16; i++) {
-          receiversPerPort.set(i, 0);
+          currentYPerPort.set(i, receiversStartY);
         }
 
         sortedPorts.forEach((differentialPortNumber) => {
@@ -428,11 +431,25 @@ export const Toolbar = ({ selectedWireColor, onWireColorChange, autoSnapEnabled,
           receiversInChain.forEach((receiverData: any, chainIdx: number) => {
             const receiverNumber = chainIdx; // 0, 1, 2, ... in the daisy chain
 
-            // Each differential port gets its own horizontal column
-            const currentReceiverIndex = receiversPerPort.get(differentialPortNumber) || 0;
+            // Get current Y position for this differential port
+            const recY = currentYPerPort.get(differentialPortNumber) || receiversStartY;
             const recX = receiversStartX + ((differentialPortNumber - 1) * receiverHorizontalSpacing);
-            const recY = receiversStartY + (currentReceiverIndex * receiverVerticalSpacing);
-            receiversPerPort.set(differentialPortNumber, currentReceiverIndex + 1);
+
+            // Calculate how much vertical space this receiver needs (including models)
+            let maxModelsOnAnyPort = 0;
+            receiverData.ports.forEach((port: any) => {
+              const modelCount = (port.models || []).length;
+              if (modelCount > maxModelsOnAnyPort) {
+                maxModelsOnAnyPort = modelCount;
+              }
+            });
+
+            // Total space needed = receiver box + model space + padding
+            const totalReceiverHeight = receiverBoxHeight + modelStartOffset +
+              (maxModelsOnAnyPort * modelVerticalSpacing) + receiverPadding;
+
+            // Update Y position for next receiver in this column
+            currentYPerPort.set(differentialPortNumber, recY + totalReceiverHeight);
 
             const timestamp = Date.now();
             const receiverId = `receiver-${timestamp}-${differentialPortNumber}-${chainIdx}`;

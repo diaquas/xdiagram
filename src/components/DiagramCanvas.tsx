@@ -143,7 +143,7 @@ export const DiagramCanvas = ({ selectedWireColor, autoSnapEnabled }: DiagramCan
             // Spread horizontally per port to avoid overlap, stack vertically per model
             const horizontalOffset = portIdx * 130; // 130px horizontal spacing per port
             const absoluteModelX = receiver.position.x + horizontalOffset + 10; // Aligned with port column
-            const absoluteModelY = receiver.position.y + 160 + modelIdx * 55; // Below receiver, stacked vertically with spacing
+            const absoluteModelY = receiver.position.y + 200 + modelIdx * 90; // Below receiver, stacked vertically with more spacing
 
             const modelId = `${receiver.id}-port-${portIdx}-model-${modelIdx}`;
 

@@ -323,10 +323,15 @@ export const Toolbar = ({ selectedWireColor, onWireColorChange, autoSnapEnabled,
           .map(p => parseInt(p, 10))
           .sort((a, b) => a - b);
 
+        // Calculate horizontal centering for differential ports
+        const totalDiffPorts = sortedPorts.length;
+        const diffPortSpacing = 400; // Horizontal spacing between differential columns
+        const diffStartX = centerX - ((totalDiffPorts - 1) * diffPortSpacing) / 2; // Center the spread
+
         sortedPorts.forEach((portNumber, index) => {
-          // Position differential ports beneath controller in vertical stack
-          const diffPortX = centerX; // Aligned with controller
-          const diffPortY = centerY + 300 + (index * 150); // Below controller with 150px spacing
+          // Spread differential ports horizontally below controller
+          const diffPortX = diffStartX + (index * diffPortSpacing);
+          const diffPortY = centerY + 300; // All differentials at same Y level below controller
 
           const diffPortId = `diff-port-${Date.now()}-${portNumber}`;
 
@@ -359,31 +364,23 @@ export const Toolbar = ({ selectedWireColor, onWireColorChange, autoSnapEnabled,
         });
 
         // Create receivers and wire them to differential ports
-        // Track global receiver index for grid layout
-        let globalReceiverIndex = 0;
-        const receiversPerRow = 6; // 6 receivers per row
-        const receiverSpacingX = 300; // Horizontal spacing between receivers
-        const receiverSpacingY = 250; // Vertical spacing between receiver rows
-        const receiversStartX = centerX + 600; // Start receivers to the right of controller
-        const receiversStartY = centerY + 300; // Start at same level as first differential
+        // Position each receiver in a vertical column below its differential port
+        const receiverVerticalSpacing = 200; // Vertical spacing between stacked receivers
+        const receiversStartY = centerY + 300 + 200; // Start below differentials
 
-        sortedPorts.forEach((differentialPortNumber) => {
+        sortedPorts.forEach((differentialPortNumber, diffIndex) => {
           const receiversInChain = receiversByDiffPort[differentialPortNumber];
           const differentialPort = differentialPorts.get(differentialPortNumber)!;
 
           const chainReceiverIds: string[] = [];
 
-          // Position all receivers in a grid layout (same vertical level for all)
+          // Position receivers in a vertical column directly below this differential
           receiversInChain.forEach((receiverData: any, chainIdx: number) => {
             const receiverNumber = chainIdx; // 0, 1, 2, ... in the daisy chain
 
-            // Calculate grid position (row and column based on global index)
-            const row = Math.floor(globalReceiverIndex / receiversPerRow);
-            const col = globalReceiverIndex % receiversPerRow;
-            const recX = receiversStartX + (col * receiverSpacingX);
-            const recY = receiversStartY + (row * receiverSpacingY);
-
-            globalReceiverIndex++;
+            // Position in column: same X as differential, stacked vertically
+            const recX = differentialPort.position.x; // Align with differential
+            const recY = receiversStartY + (chainIdx * receiverVerticalSpacing);
 
             const timestamp = Date.now();
             const receiverId = `receiver-${timestamp}-${differentialPortNumber}-${chainIdx}`;

@@ -340,8 +340,8 @@ export const Toolbar = ({ selectedWireColor, onWireColorChange }: ToolbarProps) 
           receiversInChain.forEach((receiverData: any, chainIdx: number) => {
             const receiverNumber = chainIdx; // 0, 1, 2, ... in the daisy chain
 
-            // Offset each subsequent receiver further out in the chain
-            const chainOffset = chainIdx * 200; // 200px spacing between daisy-chained receivers
+            // Offset each subsequent receiver further out in the chain (increased spacing for ports)
+            const chainOffset = chainIdx * 350; // 350px spacing for receiver + ports
             const recX = baseX + chainOffset * Math.cos(chainAngle);
             const recY = baseY + chainOffset * Math.sin(chainAngle);
 
@@ -362,6 +362,8 @@ export const Toolbar = ({ selectedWireColor, onWireColorChange }: ToolbarProps) 
 
             addReceiver(receiver);
 
+            // Port nodes are automatically created by DiagramCanvas based on receiver.ports
+
             if (chainIdx === 0) {
               // First receiver in chain: connect from differential port
               addWire({
@@ -374,10 +376,11 @@ export const Toolbar = ({ selectedWireColor, onWireColorChange }: ToolbarProps) 
             } else {
               // Subsequent receivers: connect from previous receiver in chain
               const prevReceiverId = chainReceiverIds[chainIdx - 1];
+              // Use output-1 for first daisy chain output
               addWire({
                 id: `wire-chain-${timestamp}-${differentialPortNumber}-${chainIdx}`,
                 color: 'blue',
-                from: { nodeId: prevReceiverId, portId: 'receiver-output' },
+                from: { nodeId: prevReceiverId, portId: 'receiver-output-1' },
                 to: { nodeId: receiverId, portId: 'receiver-input' },
                 label: `Daisy ${receiverNumber}`,
               });

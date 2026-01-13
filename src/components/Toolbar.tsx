@@ -5,9 +5,11 @@ import { Controller, Receiver, Differential, EthernetSwitch, PowerSupply, Label,
 interface ToolbarProps {
   selectedWireColor: WireColor;
   onWireColorChange: (color: WireColor) => void;
+  autoSnapEnabled: boolean;
+  onAutoSnapChange: (enabled: boolean) => void;
 }
 
-export const Toolbar = ({ selectedWireColor, onWireColorChange }: ToolbarProps) => {
+export const Toolbar = ({ selectedWireColor, onWireColorChange, autoSnapEnabled, onAutoSnapChange }: ToolbarProps) => {
   const {
     addController,
     addReceiver,
@@ -584,6 +586,32 @@ export const Toolbar = ({ selectedWireColor, onWireColorChange }: ToolbarProps) 
         </div>
         <div style={{ fontSize: '10px', marginTop: '5px', color: '#666' }}>
           Red=Power, Black=Data, Blue=Network
+        </div>
+      </div>
+
+      <div style={{ marginBottom: '15px' }}>
+        <h4 style={{ fontSize: '12px', margin: '0 0 5px 0', color: '#666' }}>
+          Model Settings
+        </h4>
+        <label
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            fontSize: '11px',
+            cursor: 'pointer',
+            padding: '4px 0',
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={autoSnapEnabled}
+            onChange={(e) => onAutoSnapChange(e.target.checked)}
+            style={{ marginRight: '6px', cursor: 'pointer' }}
+          />
+          Auto-snap models when dragging
+        </label>
+        <div style={{ fontSize: '9px', marginTop: '2px', color: '#666', paddingLeft: '20px' }}>
+          Automatically align models in same port
         </div>
       </div>
 

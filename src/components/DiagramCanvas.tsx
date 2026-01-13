@@ -50,9 +50,10 @@ const getWireColor = (color: WireColor): string => {
 
 interface DiagramCanvasProps {
   selectedWireColor: WireColor;
+  autoSnapEnabled: boolean;
 }
 
-export const DiagramCanvas = ({ selectedWireColor }: DiagramCanvasProps) => {
+export const DiagramCanvas = ({ selectedWireColor, autoSnapEnabled }: DiagramCanvasProps) => {
   const {
     controllers,
     receivers,
@@ -332,9 +333,63 @@ export const DiagramCanvas = ({ selectedWireColor }: DiagramCanvasProps) => {
         updatePowerSupply(node.id, { position });
       } else if (nodeType === 'label') {
         updateLabel(node.id, { position });
+      } else if (nodeType === 'model' && autoSnapEnabled) {
+        // Auto-snap models in the same port
+        const draggedPortId = node.data?.portId;
+
+        if (draggedPortId) {
+          // Find all model nodes that belong to the same port
+          const modelsInPort = nodes.filter(
+            (n) => n.type === 'model' && n.data?.portId === draggedPortId
+          );
+
+          if (modelsInPort.length > 1) {
+            // Sort models by their current Y position
+            const sortedModels = [...modelsInPort].sort((a, b) => a.position.y - b.position.y);
+
+            // Find the index of the dragged model in sorted list
+            const draggedIndex = sortedModels.findIndex((n) => n.id === node.id);
+
+            // Reposition all models with 55px vertical spacing
+            const spacing = 55;
+            const updates: any[] = [];
+
+            sortedModels.forEach((model, idx) => {
+              // Calculate new Y position relative to dragged model's position
+              const offsetFromDragged = idx - draggedIndex;
+              const newY = position.y + offsetFromDragged * spacing;
+
+              // Keep X position aligned with dragged model
+              const newX = position.x;
+
+              updates.push({
+                id: model.id,
+                position: { x: newX, y: newY },
+              });
+            });
+
+            // Update all model positions at once
+            setNodes((nds) =>
+              nds.map((n) => {
+                const update = updates.find((u) => u.id === n.id);
+                return update ? { ...n, position: update.position } : n;
+              })
+            );
+          }
+        }
       }
     },
-    [updateController, updateReceiver, updateDifferential, updateEthernetSwitch, updatePowerSupply, updateLabel]
+    [
+      updateController,
+      updateReceiver,
+      updateDifferential,
+      updateEthernetSwitch,
+      updatePowerSupply,
+      updateLabel,
+      autoSnapEnabled,
+      nodes,
+      setNodes,
+    ]
   );
 
   // Handle node deletion (triggered by Delete key or programmatic deletion)

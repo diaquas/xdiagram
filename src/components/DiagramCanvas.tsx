@@ -60,6 +60,7 @@ export const DiagramCanvas = ({ selectedWireColor, autoSnapEnabled }: DiagramCan
     controllers,
     receivers,
     differentials,
+    differentialPorts,
     ethernetSwitches,
     powerSupplies,
     labels,
@@ -68,12 +69,14 @@ export const DiagramCanvas = ({ selectedWireColor, autoSnapEnabled }: DiagramCan
     updateController,
     updateReceiver,
     updateDifferential,
+    updateDifferentialPort,
     updateEthernetSwitch,
     updatePowerSupply,
     updateLabel,
     removeController,
     removeReceiver,
     removeDifferential,
+    removeDifferentialPort,
     removeEthernetSwitch,
     removePowerSupply,
     removeLabel,
@@ -170,6 +173,15 @@ export const DiagramCanvas = ({ selectedWireColor, autoSnapEnabled }: DiagramCan
       });
     });
 
+    differentialPorts.forEach((differentialPort) => {
+      nodes.push({
+        id: differentialPort.id,
+        type: 'differentialPort',
+        position: differentialPort.position,
+        data: { differentialPort },
+      });
+    });
+
     ethernetSwitches.forEach((ethernetSwitch) => {
       nodes.push({
         id: ethernetSwitch.id,
@@ -199,7 +211,7 @@ export const DiagramCanvas = ({ selectedWireColor, autoSnapEnabled }: DiagramCan
     });
 
     return nodes;
-  }, [controllers, receivers, differentials, ethernetSwitches, powerSupplies, labels]);
+  }, [controllers, receivers, differentials, differentialPorts, ethernetSwitches, powerSupplies, labels]);
 
   // Convert wires to React Flow edges
   const initialEdges: Edge[] = useMemo(() => {
@@ -329,6 +341,8 @@ export const DiagramCanvas = ({ selectedWireColor, autoSnapEnabled }: DiagramCan
         updateReceiver(node.id, { position });
       } else if (nodeType === 'differential') {
         updateDifferential(node.id, { position });
+      } else if (nodeType === 'differentialPort') {
+        updateDifferentialPort(node.id, { position });
       } else if (nodeType === 'ethernetSwitch') {
         updateEthernetSwitch(node.id, { position });
       } else if (nodeType === 'powerSupply') {
@@ -385,6 +399,7 @@ export const DiagramCanvas = ({ selectedWireColor, autoSnapEnabled }: DiagramCan
       updateController,
       updateReceiver,
       updateDifferential,
+      updateDifferentialPort,
       updateEthernetSwitch,
       updatePowerSupply,
       updateLabel,
@@ -406,6 +421,8 @@ export const DiagramCanvas = ({ selectedWireColor, autoSnapEnabled }: DiagramCan
           removeReceiver(node.id);
         } else if (nodeType === 'differential') {
           removeDifferential(node.id);
+        } else if (nodeType === 'differentialPort') {
+          removeDifferentialPort(node.id);
         } else if (nodeType === 'ethernetSwitch') {
           removeEthernetSwitch(node.id);
         } else if (nodeType === 'powerSupply') {
@@ -415,7 +432,7 @@ export const DiagramCanvas = ({ selectedWireColor, autoSnapEnabled }: DiagramCan
         }
       });
     },
-    [removeController, removeReceiver, removeDifferential, removeEthernetSwitch, removePowerSupply, removeLabel]
+    [removeController, removeReceiver, removeDifferential, removeDifferentialPort, removeEthernetSwitch, removePowerSupply, removeLabel]
   );
 
   // Handle edge/wire deletion

@@ -397,14 +397,19 @@ export const Toolbar = ({ selectedWireColor, onWireColorChange, autoSnapEnabled,
         }
 
         // Create receivers and wire them to differential boards
-        // Position receivers below their respective board
-        const receiverVerticalSpacing = 250; // Much more vertical spacing to avoid overlaps
+        // Position receivers below their respective differential port (not board)
+        const receiverVerticalSpacing = 250; // Vertical spacing between receivers in same column
         const receiversStartY = boardY + 400; // Start much further below differential boards
+        const receiverHorizontalSpacing = 450; // Wide horizontal spacing between port columns
 
-        // Track receivers per board for positioning
-        const receiversPerBoard: Map<number, number> = new Map();
-        for (let i = 1; i <= boardCount; i++) {
-          receiversPerBoard.set(i, 0);
+        // Calculate starting X for receiver columns (spread across 16 differential ports)
+        const totalReceiverWidth = (16 - 1) * receiverHorizontalSpacing;
+        const receiversStartX = centerX - (totalReceiverWidth / 2);
+
+        // Track receivers per differential port (1-16) for vertical stacking
+        const receiversPerPort: Map<number, number> = new Map();
+        for (let i = 1; i <= 16; i++) {
+          receiversPerPort.set(i, 0);
         }
 
         sortedPorts.forEach((differentialPortNumber) => {
@@ -419,15 +424,15 @@ export const Toolbar = ({ selectedWireColor, onWireColorChange, autoSnapEnabled,
 
           const chainReceiverIds: string[] = [];
 
-          // Position receivers in a vertical column directly below this board
+          // Position receivers in a vertical column for this specific differential port
           receiversInChain.forEach((receiverData: any, chainIdx: number) => {
             const receiverNumber = chainIdx; // 0, 1, 2, ... in the daisy chain
 
-            // Position in column: same X as board, stacked vertically
-            const currentReceiverIndex = receiversPerBoard.get(boardNumber) || 0;
-            const recX = board.position.x; // Align with board
+            // Each differential port gets its own horizontal column
+            const currentReceiverIndex = receiversPerPort.get(differentialPortNumber) || 0;
+            const recX = receiversStartX + ((differentialPortNumber - 1) * receiverHorizontalSpacing);
             const recY = receiversStartY + (currentReceiverIndex * receiverVerticalSpacing);
-            receiversPerBoard.set(boardNumber, currentReceiverIndex + 1);
+            receiversPerPort.set(differentialPortNumber, currentReceiverIndex + 1);
 
             const timestamp = Date.now();
             const receiverId = `receiver-${timestamp}-${differentialPortNumber}-${chainIdx}`;

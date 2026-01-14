@@ -136,6 +136,14 @@ export class XLightsParser {
               }
               break;
 
+            case 'Cube':
+              // Cube: parm1 (depth) * parm2 (height) * parm3 (width)
+              const depth = parseInt(attrs.parm1, 10) || 0;
+              const cubeHeight = parseInt(attrs.parm2, 10) || 0;
+              const cubeWidth = parseInt(attrs.parm3, 10) || 0;
+              pixelCount = depth * cubeHeight * cubeWidth;
+              break;
+
             case 'Custom':
               // Custom: CustomModel data is stored in attrs.CustomModel (not model.CustomModel)
               if (attrs.CustomModel && typeof attrs.CustomModel === 'string') {

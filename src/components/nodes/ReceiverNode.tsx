@@ -51,7 +51,7 @@ export const ReceiverNode = memo(({ data }: NodeProps<ReceiverNodeData>) => {
         border: '2px solid #48BB78',
         borderRadius: '8px',
         background: '#C6F6D5',
-        width: '340px',
+        width: '280px',
         height: '120px',
         position: 'relative',
         overflow: 'visible', // Allow child nodes to extend beyond

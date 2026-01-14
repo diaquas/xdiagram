@@ -148,8 +148,8 @@ export const DiagramCanvas = ({ selectedWireColor, autoSnapEnabled }: DiagramCan
           }
         }
 
-        // Position ports to overlap bottom edge of receiver
-        const portX = 30 + portIdx * 70; // Start at 30px from left, 70px spacing
+        // Position ports to overlap bottom edge of receiver (centered in 280px box)
+        const portX = 10 + portIdx * 65; // Start at 10px from left, 65px spacing
         const portY = 95; // Overlaps bottom edge (receiver height is 120px)
 
         const portId = `${receiver.id}-port-${portIdx}`;

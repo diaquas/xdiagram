@@ -74,12 +74,12 @@ export const ReceiverNode = memo(({ data }: NodeProps<ReceiverNodeData>) => {
         <Handle type="target" position={Position.Top} id="receiver-input" style={{ opacity: 0 }} />
       </div>
 
-      {/* Output connection squares (left side - positioned near bottom for port alignment) */}
+      {/* Output connection squares (left side - aligned with port circles at bottom) */}
       <div
         style={{
           position: 'absolute',
           left: '-12px',
-          bottom: '35px',
+          bottom: '-5px',
           width: '20px',
           height: '20px',
           border: '2px solid #48BB78',
@@ -94,7 +94,7 @@ export const ReceiverNode = memo(({ data }: NodeProps<ReceiverNodeData>) => {
         style={{
           position: 'absolute',
           left: '-12px',
-          bottom: '8px',
+          bottom: '-32px',
           width: '20px',
           height: '20px',
           border: '2px solid #48BB78',

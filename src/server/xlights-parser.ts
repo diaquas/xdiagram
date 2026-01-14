@@ -104,7 +104,7 @@ export class XLightsParser {
           if (modelName.toLowerCase().includes('spinner') ||
               modelName.toLowerCase().includes('overlord') ||
               modelName.toLowerCase().includes('rosa')) {
-            console.log(`  ALL attributes for ${modelName}:`, Object.keys(attrs).filter(k => k.toLowerCase().includes('str') || k.toLowerCase().includes('port')));
+            console.log(`  ALL attributes for ${modelName}:`, attrs);
           }
 
           // Log first Arch model structure more deeply

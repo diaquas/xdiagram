@@ -74,13 +74,12 @@ export const ReceiverNode = memo(({ data }: NodeProps<ReceiverNodeData>) => {
         <Handle type="target" position={Position.Top} id="receiver-input" style={{ opacity: 0 }} />
       </div>
 
-      {/* Output connection squares (left side - for daisy chaining down) */}
+      {/* Output connection squares (left side - positioned near bottom for port alignment) */}
       <div
         style={{
           position: 'absolute',
           left: '-12px',
-          top: '60%',
-          transform: 'translateY(-50%)',
+          bottom: '35px',
           width: '20px',
           height: '20px',
           border: '2px solid #48BB78',
@@ -95,8 +94,7 @@ export const ReceiverNode = memo(({ data }: NodeProps<ReceiverNodeData>) => {
         style={{
           position: 'absolute',
           left: '-12px',
-          top: '85%',
-          transform: 'translateY(-50%)',
+          bottom: '8px',
           width: '20px',
           height: '20px',
           border: '2px solid #48BB78',
@@ -132,16 +130,16 @@ export const ReceiverNode = memo(({ data }: NodeProps<ReceiverNodeData>) => {
           autoFocus
           style={{
             position: 'absolute',
-            top: '32px',
+            top: '8px',
             left: '50%',
             transform: 'translateX(-50%)',
-            width: '80%',
+            width: '70%',
             fontWeight: 'bold',
             color: '#22543D',
             border: '2px solid #48BB78',
             borderRadius: '4px',
-            padding: '4px 8px',
-            fontSize: '24px',
+            padding: '2px 6px',
+            fontSize: '20px',
             textAlign: 'center',
           }}
         />
@@ -149,15 +147,15 @@ export const ReceiverNode = memo(({ data }: NodeProps<ReceiverNodeData>) => {
         <div
           style={{
             position: 'absolute',
-            top: '35px',
+            top: '10px',
             left: '50%',
             transform: 'translateX(-50%)',
             fontWeight: 'bold',
             color: '#22543D',
             cursor: 'pointer',
-            fontSize: '24px',
+            fontSize: '20px',
             textAlign: 'center',
-            width: '80%',
+            width: '70%',
           }}
           onDoubleClick={handleDoubleClick}
           title="Double-click to rename"

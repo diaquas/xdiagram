@@ -150,6 +150,15 @@ export class XLightsParser {
               }
               break;
 
+            case 'Window Frame':
+              // Window Frame: top + (left + right) + bottom
+              // parm1 = top, parm2 = left/right sides (each), parm3 = bottom
+              const top = parseInt(attrs.parm1, 10) || 0;
+              const sides = parseInt(attrs.parm2, 10) || 0;
+              const bottom = parseInt(attrs.parm3, 10) || 0;
+              pixelCount = top + (sides * 2) + bottom;
+              break;
+
             case 'Cube':
               // Cube: parm1 (depth) * parm2 (height) * parm3 (width)
               const depth = parseInt(attrs.parm1, 10) || 0;

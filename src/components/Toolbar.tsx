@@ -29,6 +29,11 @@ export const Toolbar = ({ selectedWireColor, onWireColorChange, autoSnapEnabled,
   const [availableControllers, setAvailableControllers] = useState<any[]>([]);
   const [selectedControllers, setSelectedControllers] = useState<Set<string>>(new Set());
   const [controllerPortInfo, setControllerPortInfo] = useState<any>(null);
+  const [importSummary, setImportSummary] = useState<{
+    receiverCount: number;
+    pixelCount: number;
+    channelCount: number;
+  } | null>(null);
 
   const handleAddController = () => {
     const newController: Controller = {
@@ -508,6 +513,28 @@ export const Toolbar = ({ selectedWireColor, onWireColorChange, autoSnapEnabled,
         console.log(`Imported ${xlController.name}`);
       }
     });
+
+    // Calculate and set import summary statistics
+    // Count actual receivers created across all controllers
+    let totalReceivers = 0;
+    xlControllers.forEach((xlController: any) => {
+      const controllerModels = controllerInfo.models.filter(
+        (m: any) => m.controller === xlController.name
+      );
+      if (controllerModels.length > 0) {
+        const receiversData = createReceiversFromModels(controllerModels);
+        totalReceivers += receiversData.length;
+      }
+    });
+
+    const totalPixels = controllerInfo.models.reduce((sum, model) => sum + (model.pixelCount || 0), 0);
+    const totalChannels = totalPixels * 3; // Each pixel uses 3 channels (RGB)
+
+    setImportSummary({
+      receiverCount: totalReceivers,
+      pixelCount: totalPixels,
+      channelCount: totalChannels,
+    });
   };
 
   // Helper function to group models into receivers using xLights port assignments
@@ -670,6 +697,35 @@ const createReceiversFromModels = (models: any[]) => {
       }}
     >
       <h3 style={{ margin: '0 0 10px 0', fontSize: '16px' }}>xWire Toolbar</h3>
+
+      {/* Import Summary Widget */}
+      {importSummary && (
+        <div style={{
+          marginBottom: '15px',
+          padding: '10px',
+          background: '#F0F9FF',
+          border: '2px solid #3B82F6',
+          borderRadius: '6px',
+        }}>
+          <h4 style={{ margin: '0 0 8px 0', fontSize: '13px', fontWeight: 'bold', color: '#1E40AF' }}>
+            Import Summary
+          </h4>
+          <div style={{ fontSize: '12px', color: '#1E3A8A' }}>
+            <div style={{ marginBottom: '4px', display: 'flex', justifyContent: 'space-between' }}>
+              <span>Total Receivers:</span>
+              <strong>{importSummary.receiverCount}</strong>
+            </div>
+            <div style={{ marginBottom: '4px', display: 'flex', justifyContent: 'space-between' }}>
+              <span>Total Pixels:</span>
+              <strong>{importSummary.pixelCount.toLocaleString()}</strong>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span>Total Channels:</span>
+              <strong>{importSummary.channelCount.toLocaleString()}</strong>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div style={{ marginBottom: '15px' }}>
         <h4 style={{ fontSize: '12px', margin: '0 0 5px 0', color: '#666' }}>

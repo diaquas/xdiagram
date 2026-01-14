@@ -517,7 +517,7 @@ export const Toolbar = ({ selectedWireColor, onWireColorChange, autoSnapEnabled,
     // Calculate and set import summary statistics
     // Count actual receivers created across all controllers
     let totalReceivers = 0;
-    xlControllers.forEach((xlController: any) => {
+    controllersToImport.forEach((xlController: any) => {
       const controllerModels = controllerInfo.models.filter(
         (m: any) => m.controller === xlController.name
       );

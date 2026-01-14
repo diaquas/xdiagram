@@ -79,7 +79,7 @@ export const ReceiverNode = memo(({ data }: NodeProps<ReceiverNodeData>) => {
         style={{
           position: 'absolute',
           left: '-12px',
-          top: '35%',
+          top: '60%',
           transform: 'translateY(-50%)',
           width: '20px',
           height: '20px',
@@ -95,7 +95,7 @@ export const ReceiverNode = memo(({ data }: NodeProps<ReceiverNodeData>) => {
         style={{
           position: 'absolute',
           left: '-12px',
-          top: '65%',
+          top: '85%',
           transform: 'translateY(-50%)',
           width: '20px',
           height: '20px',
@@ -121,7 +121,7 @@ export const ReceiverNode = memo(({ data }: NodeProps<ReceiverNodeData>) => {
         {receiverNumber} <span style={{ fontSize: '12px', fontWeight: 'normal', color: '#2F855A' }}>{fullAddressPath}</span>
       </div>
 
-      {/* Receiver name - centered, big and bold */}
+      {/* Receiver name - centered horizontally, positioned in upper portion */}
       {isEditing ? (
         <input
           type="text"
@@ -132,9 +132,9 @@ export const ReceiverNode = memo(({ data }: NodeProps<ReceiverNodeData>) => {
           autoFocus
           style={{
             position: 'absolute',
-            top: '50%',
+            top: '32px',
             left: '50%',
-            transform: 'translate(-50%, -50%)',
+            transform: 'translateX(-50%)',
             width: '80%',
             fontWeight: 'bold',
             color: '#22543D',
@@ -149,9 +149,9 @@ export const ReceiverNode = memo(({ data }: NodeProps<ReceiverNodeData>) => {
         <div
           style={{
             position: 'absolute',
-            top: '50%',
+            top: '35px',
             left: '50%',
-            transform: 'translate(-50%, -50%)',
+            transform: 'translateX(-50%)',
             fontWeight: 'bold',
             color: '#22543D',
             cursor: 'pointer',

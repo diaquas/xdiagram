@@ -135,6 +135,19 @@ export const DiagramCanvas = ({ selectedWireColor, autoSnapEnabled }: DiagramCan
           ? `${receiver.differentialPortNumber}:${receiverNumber}:${portNumber}`
           : `${receiverNumber}:${portNumber}`;
 
+        // Get shared budget information from differential port
+        let sharedCurrentPixels = port.currentPixels;
+        let sharedMaxPixels = port.maxPixels;
+
+        if (receiver.differentialPortNumber) {
+          // Find the DifferentialPort this receiver is connected to
+          const diffPort = differentialPorts.find(dp => dp.portNumber === receiver.differentialPortNumber);
+          if (diffPort && diffPort.sharedPorts[portIdx]) {
+            sharedCurrentPixels = diffPort.sharedPorts[portIdx].currentPixels;
+            sharedMaxPixels = diffPort.sharedPorts[portIdx].maxPixels;
+          }
+        }
+
         // Position ports to overlap bottom edge of receiver
         const portX = 30 + portIdx * 70; // Start at 30px from left, 70px spacing
         const portY = 95; // Overlaps bottom edge (receiver height is 120px)
@@ -153,6 +166,8 @@ export const DiagramCanvas = ({ selectedWireColor, autoSnapEnabled }: DiagramCan
             fullAddress,
             maxPixels: port.maxPixels,
             currentPixels: port.currentPixels,
+            sharedMaxPixels,
+            sharedCurrentPixels,
             models: port.models || [],
             receiverId: receiver.id,
           },

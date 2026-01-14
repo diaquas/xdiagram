@@ -145,7 +145,8 @@ export class XLightsParser {
 
             case 'Tree 360':
             case 'Tree 180':
-              // Tree 360 and Tree 180: parm2 is the pixel count
+            case 'Tree Flat':
+              // Tree 360, Tree 180, and Tree Flat: parm2 is the pixel count
               pixelCount = parseInt(attrs.parm2, 10) || 0;
               break;
 
